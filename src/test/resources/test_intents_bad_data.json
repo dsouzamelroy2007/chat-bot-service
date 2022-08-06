@@ -1,0 +1,25 @@
+{
+  "intents": [
+    {
+      "confidence": "ertrtre",
+      "name": "Goodbye"
+    },
+    {
+      "confidence": 0.0011468830052763224,
+      "name": "Greeting"
+    },
+    {
+      "confidence": 0.000571651675272733,
+      "name": "Affirmative"
+    },
+    {
+      "confidence": 0.00015076140698511153,
+      "name": "Returning order"
+    },
+    {
+      "confidence": 0.00012084779154974967,
+      "name": "Thank you"
+    }
+  ],
+  "entities": []
+}

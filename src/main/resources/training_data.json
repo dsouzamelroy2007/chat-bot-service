@@ -1,0 +1,85 @@
+[
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Greeting",
+    "messages": [
+      "Hello",
+      "Hi",
+      "Good morning!"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Goodbye",
+    "messages": [
+      "Thanks, bye!",
+      "Goodbye!",
+      "See you"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Affirmative",
+    "messages": [
+      "Yeah",
+      "yep",
+      "yes, please"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Negative",
+    "messages": [
+      "No thanks!",
+      "nope",
+      "please don't"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Thank you",
+    "messages": [
+      "Brilliant! Thanks!",
+      "thx",
+      "thank you"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Are you a bot?",
+    "messages": [
+      "Are u human?",
+      "Are you a bot?",
+      "Is this a robot?"
+    ]
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "I want to speak with a human",
+    "messages": [
+      "Can I talk to a human?",
+      "I want to speak to an agent.",
+      "transfer to a human"
+    ]
+
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Login problems",
+    "messages": [
+      "I can't sign in",
+      "The login is giving me an error.",
+      "Can you help me change my password, can't log in!"
+    ]
+
+  },
+  {
+    "_class":"com.ultimate.cb.domain.TrainingData",
+    "intent": "Open or close account",
+    "messages": [
+      "Where do I open a new account?",
+      "how to start an account ",
+      "i need help creating an account"
+    ]
+  }
+]

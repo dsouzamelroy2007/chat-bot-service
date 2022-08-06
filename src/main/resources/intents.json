@@ -1,0 +1,65 @@
+[
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Greeting",
+    "description": "The visitor says hello.",
+    "confidenceThreshold": "0.8050",
+    "reply": "Hello :) How can I help you?"
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Goodbye",
+    "description": "The visitor says goodbye.",
+    "confidenceThreshold": "0.7050",
+    "reply": "Goodbye, have a nice day!"
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Affirmative",
+    "description": "The visitor confirms that something is true / correct.",
+    "confidenceThreshold": "0.7050",
+    "reply": "Great!"
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Negative",
+    "description": "The visitor confirms that they don't need help / something is not true or similar.",
+    "confidenceThreshold": "0.8150",
+    "reply": "Alright, please let me know if I can help you with anything else!"
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Thank you",
+    "description": "The visitor says thank you.",
+    "confidenceThreshold": "0.8150",
+    "reply":  "It was a pleasure to be of help :)"
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Are you a bot?",
+    "description": "The visitor wants to know if they are talking to a bot or a human.",
+    "confidenceThreshold": "0.950",
+    "reply": "I'm an AI bot, and I'm here to help you with your questions."
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "I want to speak with a human",
+    "description": "The visitor wants to speak to a human agent.",
+    "confidenceThreshold": "0.910",
+    "reply":  "Let me transfer you to the first available agent."
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Login problems",
+    "description": "The visitor has trouble logging in.",
+    "confidenceThreshold": "0.932220",
+    "reply": "Oh no! Please give me your email and I will fix it."
+  },
+  {
+    "_class":"com.ultimate.cb.domain.IntentReply",
+    "intent": "Open or close account",
+    "description": "The visitor wants to create a new account or close an existing one.",
+    "confidenceThreshold": "0.9168260526657104",
+    "reply":  "Please follow these instructions \"LINK\" to open a new account."
+  }
+]

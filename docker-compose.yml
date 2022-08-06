@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  web:
+    image : chat-bot-service
+    container_name: chatbotservice
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    links:
+      - mongodb
+  mongodb:
+    image : mongo
+    container_name: chatbotmongodb
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 27019:27017
+    restart: unless-stopped

@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="6dd4b640-0676-4c28-8723-8042e3eb45f3" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
+  <component name="CoverageViewManager">
+    <option name="myElementSize" value="154" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="importingSettings">
+      <MavenImportingSettings>
+        <option name="importAutomatically" value="true" />
+      </MavenImportingSettings>
+    </option>
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="1" />
+  </component>
+  <component name="ProjectId" id="1pkFRq7L2PGoZmb5OaQYnzb3Qdz" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/test/resources" />
+    <property name="project.structure.last.edited" value="Project" />
+    <property name="project.structure.proportion" value="0.0" />
+    <property name="project.structure.side.proportion" value="0.0" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.assignment.sm.util" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/test/resources" />
+      <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.assignment.sm.exception" />
+      <recent name="com.assignment.sm.repository" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/main/resources" />
+      <recent name="$PROJECT_DIR$/src/test/resources" />
+    </key>
+  </component>
+  <component name="RunAnythingCache">
+    <option name="myCommands">
+      <command value="mvn clean compiler:testCompile surefire:test " />
+      <command value="mvn package" />
+      <command value="mvn clean" />
+      <command value="mvn install" />
+      <command value="mvn -U clean" />
+    </option>
+  </component>
+  <component name="RunManager" selected="JUnit.All in chat-bot-service (1)">
+    <configuration name="All in chat-bot-service (1)" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="chat-bot-service" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="TEST_OBJECT" value="package" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="All in chat-bot-service" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="chat-bot-service" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="TEST_OBJECT" value="package" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ChatReplyControllerTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="chat-bot-service" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ultimate.cb.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ultimate.cb.controller" />
+      <option name="MAIN_CLASS_NAME" value="com.ultimate.cb.controller.ChatReplyControllerTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ChatReplyControllerTest.testGetChatReplyisValidRequest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="chat-bot-service" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ultimate.cb.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ultimate.cb.controller" />
+      <option name="MAIN_CLASS_NAME" value="com.ultimate.cb.controller.ChatReplyControllerTest" />
+      <option name="METHOD_NAME" value="testGetChatReplyisValidRequest" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ChatReplyControllerTest.testSaveChatReplyisValidRequest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="chat-bot-service" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ultimate.cb.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ultimate.cb.controller" />
+      <option name="MAIN_CLASS_NAME" value="com.ultimate.cb.controller.ChatReplyControllerTest" />
+      <option name="METHOD_NAME" value="testSaveChatReplyisValidRequest" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="JetRunConfigurationType" factoryName="Kotlin">
+      <module name="bitcoin-exchange-service" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="WORKING_DIRECTORY" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType" factoryName="Kotlin script">
+      <module name="bitcoin-exchange-service" />
+      <option name="filePath" />
+      <option name="vmParameters" />
+      <option name="alternativeJrePath" />
+      <option name="programParameters" />
+      <option name="passParentEnvs" value="true" />
+      <option name="workingDirectory" />
+      <option name="isAlternativeJrePathEnabled" value="false" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="WORKING_DIRECTORY" />
+      <option name="filePath" />
+      <option name="vmParameters" />
+      <option name="alternativeJrePath" />
+      <option name="programParameters" />
+      <option name="passParentEnvs" value="true" />
+      <option name="workingDirectory" />
+      <option name="isAlternativeJrePathEnabled" value="false" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="WORKING_DIRECTORY" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="JUnit.All in chat-bot-service" />
+      <item itemvalue="JUnit.ChatReplyControllerTest.testGetChatReplyisValidRequest" />
+      <item itemvalue="JUnit.ChatReplyControllerTest.testSaveChatReplyisValidRequest" />
+      <item itemvalue="JUnit.ChatReplyControllerTest" />
+      <item itemvalue="JUnit.All in chat-bot-service (1)" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.All in chat-bot-service (1)" />
+        <item itemvalue="JUnit.ChatReplyControllerTest" />
+        <item itemvalue="JUnit.ChatReplyControllerTest.testSaveChatReplyisValidRequest" />
+        <item itemvalue="JUnit.ChatReplyControllerTest.testGetChatReplyisValidRequest" />
+        <item itemvalue="JUnit.All in chat-bot-service" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6dd4b640-0676-4c28-8723-8042e3eb45f3" name="Default Changelist" comment="" />
+      <created>1615719175973</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1615719175973</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="571" y="208" key="#BitcoinExchangeService" timestamp="1619905126326">
+      <screen x="0" y="23" width="1792" height="1047" />
+    </state>
+    <state x="571" y="208" key="#BitcoinExchangeService/0.23.1792.1047@0.23.1792.1047" timestamp="1619905126326" />
+    <state x="329" y="337" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1620131529821">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="329" y="337" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620131529821" />
+    <state x="100" y="136" width="1401" height="845" key="#com.intellij.execution.junit2.states.ComparisonFailureState$DiffDialog" timestamp="1620041186240">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="100" y="136" width="1401" height="845" key="#com.intellij.execution.junit2.states.ComparisonFailureState$DiffDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620041186240" />
+    <state x="602" y="459" key="#com.intellij.ide.util.PackageChooserDialog" timestamp="1620131482855">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="602" y="459" key="#com.intellij.ide.util.PackageChooserDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620131482854" />
+    <state x="602" y="467" key="#com.intellij.ide.util.TreeClassChooserDialog" timestamp="1620131497446">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="602" y="467" key="#com.intellij.ide.util.TreeClassChooserDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620131497446" />
+    <state x="1137" y="412" width="471" height="273" key="#com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesDialog.classes" timestamp="1615900257081">
+      <screen x="0" y="23" width="1792" height="1050" />
+    </state>
+    <state x="1137" y="412" width="471" height="273" key="#com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesDialog.classes/0.23.1792.1050@0.23.1792.1050" timestamp="1615900257081" />
+    <state x="357" y="23" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1620047400012">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="357" y="23" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620047400012" />
+    <state x="1268" y="372" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1620077561389">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="1268" y="372" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1792.1045@0.23.1792.1045" timestamp="1620077561389" />
+    <state x="1268" y="373" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1792.1047@0.23.1792.1047" timestamp="1619858950516" />
+    <state x="679" y="276" key="#xdebugger.evaluate" timestamp="1620120450169">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="679" y="276" key="#xdebugger.evaluate/0.23.1792.1045@0.23.1792.1045" timestamp="1620120450169" />
+    <state x="679" y="276" key="#xdebugger.evaluate/0.23.1792.1047@0.23.1792.1047" timestamp="1615852768261" />
+    <state x="679" y="277" key="#xdebugger.evaluate/0.23.1792.1050@0.23.1792.1050" timestamp="1615972652872" />
+    <state x="679" y="277" key="#xdebugger.evaluate/0.23.1792.1051@0.23.1792.1051" timestamp="1615978974114" />
+    <state width="592" height="469" key="DebuggerActiveHint" timestamp="1615976527932">
+      <screen x="0" y="23" width="1792" height="1051" />
+    </state>
+    <state width="532" height="466" key="DebuggerActiveHint/0.23.1792.1047@0.23.1792.1047" timestamp="1615852158613" />
+    <state width="592" height="468" key="DebuggerActiveHint/0.23.1792.1050@0.23.1792.1050" timestamp="1615972707413" />
+    <state width="592" height="469" key="DebuggerActiveHint/0.23.1792.1051@0.23.1792.1051" timestamp="1615976527932" />
+    <state width="1557" height="280" key="GridCell.Tab.0.bottom" timestamp="1620132672644">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="280" key="GridCell.Tab.0.bottom/0.23.1792.1045@0.23.1792.1045" timestamp="1620132672644" />
+    <state width="1748" height="280" key="GridCell.Tab.0.bottom/0.23.1792.1047@0.23.1792.1047" timestamp="1619944927863" />
+    <state width="1750" height="392" key="GridCell.Tab.0.bottom/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714441" />
+    <state width="1750" height="296" key="GridCell.Tab.0.bottom/0.23.1792.1049@0.23.1792.1049" timestamp="1616090497767" />
+    <state width="1750" height="376" key="GridCell.Tab.0.bottom/0.23.1792.1050@0.23.1792.1050" timestamp="1616070617668" />
+    <state width="1750" height="304" key="GridCell.Tab.0.bottom/0.23.1792.1051@0.23.1792.1051" timestamp="1616019553999" />
+    <state width="1557" height="280" key="GridCell.Tab.0.center" timestamp="1620132672643">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="280" key="GridCell.Tab.0.center/0.23.1792.1045@0.23.1792.1045" timestamp="1620132672643" />
+    <state width="1748" height="280" key="GridCell.Tab.0.center/0.23.1792.1047@0.23.1792.1047" timestamp="1619944927862" />
+    <state width="1750" height="392" key="GridCell.Tab.0.center/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714440" />
+    <state width="1750" height="296" key="GridCell.Tab.0.center/0.23.1792.1049@0.23.1792.1049" timestamp="1616090497766" />
+    <state width="1750" height="376" key="GridCell.Tab.0.center/0.23.1792.1050@0.23.1792.1050" timestamp="1616070617667" />
+    <state width="1750" height="304" key="GridCell.Tab.0.center/0.23.1792.1051@0.23.1792.1051" timestamp="1616019553998" />
+    <state width="1557" height="280" key="GridCell.Tab.0.left" timestamp="1620132672643">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="280" key="GridCell.Tab.0.left/0.23.1792.1045@0.23.1792.1045" timestamp="1620132672643" />
+    <state width="1748" height="280" key="GridCell.Tab.0.left/0.23.1792.1047@0.23.1792.1047" timestamp="1619944927861" />
+    <state width="1750" height="392" key="GridCell.Tab.0.left/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714440" />
+    <state width="1750" height="296" key="GridCell.Tab.0.left/0.23.1792.1049@0.23.1792.1049" timestamp="1616090497766" />
+    <state width="1750" height="376" key="GridCell.Tab.0.left/0.23.1792.1050@0.23.1792.1050" timestamp="1616070617666" />
+    <state width="1750" height="304" key="GridCell.Tab.0.left/0.23.1792.1051@0.23.1792.1051" timestamp="1616019553997" />
+    <state width="1557" height="280" key="GridCell.Tab.0.right" timestamp="1620132672643">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="280" key="GridCell.Tab.0.right/0.23.1792.1045@0.23.1792.1045" timestamp="1620132672643" />
+    <state width="1748" height="280" key="GridCell.Tab.0.right/0.23.1792.1047@0.23.1792.1047" timestamp="1619944927862" />
+    <state width="1750" height="392" key="GridCell.Tab.0.right/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714441" />
+    <state width="1750" height="296" key="GridCell.Tab.0.right/0.23.1792.1049@0.23.1792.1049" timestamp="1616090497767" />
+    <state width="1750" height="376" key="GridCell.Tab.0.right/0.23.1792.1050@0.23.1792.1050" timestamp="1616070617667" />
+    <state width="1750" height="304" key="GridCell.Tab.0.right/0.23.1792.1051@0.23.1792.1051" timestamp="1616019553998" />
+    <state width="1557" height="372" key="GridCell.Tab.1.bottom" timestamp="1620128474373">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="372" key="GridCell.Tab.1.bottom/0.23.1792.1045@0.23.1792.1045" timestamp="1620128474373" />
+    <state width="1748" height="349" key="GridCell.Tab.1.bottom/0.23.1792.1047@0.23.1792.1047" timestamp="1619944094390" />
+    <state width="1750" height="392" key="GridCell.Tab.1.bottom/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714444" />
+    <state width="1750" height="384" key="GridCell.Tab.1.bottom/0.23.1792.1049@0.23.1792.1049" timestamp="1615967875833" />
+    <state width="1750" height="391" key="GridCell.Tab.1.bottom/0.23.1792.1050@0.23.1792.1050" timestamp="1615973722980" />
+    <state width="1750" height="458" key="GridCell.Tab.1.bottom/0.23.1792.1051@0.23.1792.1051" timestamp="1616015706830" />
+    <state width="1557" height="372" key="GridCell.Tab.1.center" timestamp="1620128474373">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="372" key="GridCell.Tab.1.center/0.23.1792.1045@0.23.1792.1045" timestamp="1620128474373" />
+    <state width="1748" height="349" key="GridCell.Tab.1.center/0.23.1792.1047@0.23.1792.1047" timestamp="1619944094390" />
+    <state width="1750" height="392" key="GridCell.Tab.1.center/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714442" />
+    <state width="1750" height="384" key="GridCell.Tab.1.center/0.23.1792.1049@0.23.1792.1049" timestamp="1615967875833" />
+    <state width="1750" height="391" key="GridCell.Tab.1.center/0.23.1792.1050@0.23.1792.1050" timestamp="1615973722979" />
+    <state width="1750" height="458" key="GridCell.Tab.1.center/0.23.1792.1051@0.23.1792.1051" timestamp="1616015706830" />
+    <state width="1557" height="372" key="GridCell.Tab.1.left" timestamp="1620128474372">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="372" key="GridCell.Tab.1.left/0.23.1792.1045@0.23.1792.1045" timestamp="1620128474372" />
+    <state width="1748" height="349" key="GridCell.Tab.1.left/0.23.1792.1047@0.23.1792.1047" timestamp="1619944094390" />
+    <state width="1750" height="392" key="GridCell.Tab.1.left/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714442" />
+    <state width="1750" height="384" key="GridCell.Tab.1.left/0.23.1792.1049@0.23.1792.1049" timestamp="1615967875833" />
+    <state width="1750" height="391" key="GridCell.Tab.1.left/0.23.1792.1050@0.23.1792.1050" timestamp="1615973722979" />
+    <state width="1750" height="458" key="GridCell.Tab.1.left/0.23.1792.1051@0.23.1792.1051" timestamp="1616015706830" />
+    <state width="1557" height="372" key="GridCell.Tab.1.right" timestamp="1620128474373">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state width="1557" height="372" key="GridCell.Tab.1.right/0.23.1792.1045@0.23.1792.1045" timestamp="1620128474373" />
+    <state width="1748" height="349" key="GridCell.Tab.1.right/0.23.1792.1047@0.23.1792.1047" timestamp="1619944094390" />
+    <state width="1750" height="392" key="GridCell.Tab.1.right/0.23.1792.1048@0.23.1792.1048" timestamp="1616091714443" />
+    <state width="1750" height="384" key="GridCell.Tab.1.right/0.23.1792.1049@0.23.1792.1049" timestamp="1615967875833" />
+    <state width="1750" height="391" key="GridCell.Tab.1.right/0.23.1792.1050@0.23.1792.1050" timestamp="1615973722980" />
+    <state width="1750" height="458" key="GridCell.Tab.1.right/0.23.1792.1051@0.23.1792.1051" timestamp="1616015706830" />
+    <state x="406" y="210" key="Maven.ArtifactSearchDialog" timestamp="1619941105225">
+      <screen x="0" y="23" width="1792" height="1047" />
+    </state>
+    <state x="406" y="210" key="Maven.ArtifactSearchDialog/0.23.1792.1047@0.23.1792.1047" timestamp="1619941105225" />
+    <state x="288" y="141" key="SettingsEditor" timestamp="1620057533407">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="288" y="141" key="SettingsEditor/0.23.1792.1045@0.23.1792.1045" timestamp="1620057533407" />
+    <state x="101" y="124" width="1592" height="847" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1616093109484">
+      <screen x="0" y="23" width="1792" height="1047" />
+    </state>
+    <state x="101" y="124" width="1592" height="847" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.23.1792.1047@0.23.1792.1047" timestamp="1616093109484" />
+    <state x="458" y="290" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1619952349930">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="458" y="290" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.23.1792.1045@0.23.1792.1045" timestamp="1619952349930" />
+    <state x="458" y="291" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.23.1792.1047@0.23.1792.1047" timestamp="1619942453806" />
+    <state x="536" y="309" width="869" height="645" key="find.popup" timestamp="1619906339220">
+      <screen x="0" y="23" width="1792" height="1047" />
+    </state>
+    <state x="536" y="309" width="869" height="645" key="find.popup/0.23.1792.1047@0.23.1792.1047" timestamp="1619906339220" />
+    <state x="536" y="309" width="869" height="645" key="find.popup/0.23.1792.1048@0.23.1792.1048" timestamp="1616056258280" />
+    <state x="536" y="310" width="689" height="472" key="find.popup/0.23.1792.1051@0.23.1792.1051" timestamp="1616015699951" />
+    <state x="666" y="249" width="670" height="675" key="run.anything.popup" timestamp="1620132672658">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="666" y="249" width="670" height="675" key="run.anything.popup/0.23.1792.1045@0.23.1792.1045" timestamp="1620132672658" />
+    <state x="666" y="249" width="670" height="676" key="run.anything.popup/0.23.1792.1047@0.23.1792.1047" timestamp="1619942494609" />
+    <state x="666" y="250" width="670" height="675" key="run.anything.popup/0.23.1792.1048@0.23.1792.1048" timestamp="1616077636724" />
+    <state x="666" y="250" width="670" height="676" key="run.anything.popup/0.23.1792.1049@0.23.1792.1049" timestamp="1616075712228" />
+    <state x="666" y="250" width="670" height="677" key="run.anything.popup/0.23.1792.1050@0.23.1792.1050" timestamp="1615997302846" />
+    <state x="666" y="250" width="670" height="678" key="run.anything.popup/0.23.1792.1051@0.23.1792.1051" timestamp="1616018484225" />
+    <state x="664" y="357" width="670" height="674" key="search.everywhere.popup" timestamp="1620033558165">
+      <screen x="0" y="23" width="1792" height="1045" />
+    </state>
+    <state x="664" y="357" width="670" height="674" key="search.everywhere.popup/0.23.1792.1045@0.23.1792.1045" timestamp="1620033558165" />
+    <state x="664" y="358" width="670" height="675" key="search.everywhere.popup/0.23.1792.1047@0.23.1792.1047" timestamp="1615830051320" />
+    <state x="664" y="359" width="670" height="676" key="search.everywhere.popup/0.23.1792.1049@0.23.1792.1049" timestamp="1615928218249" />
+    <state x="664" y="359" width="670" height="677" key="search.everywhere.popup/0.23.1792.1050@0.23.1792.1050" timestamp="1615972073976" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/exception/IntentFetchException.java</url>
+          <line>32</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/service/ChatReplyService.java</url>
+          <line>38</line>
+          <option name="timeStamp" value="58" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/test/java/com/ultimate/cb/util/ChatDataUtilTest.java</url>
+          <line>58</line>
+          <option name="timeStamp" value="69" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/service/RestService.java</url>
+          <line>51</line>
+          <option name="timeStamp" value="71" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/service/RestService.java</url>
+          <line>63</line>
+          <option name="timeStamp" value="72" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/exception/InvalidInputException.java</url>
+          <line>29</line>
+          <option name="timeStamp" value="75" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ultimate/cb/util/ChatDataUtil.java</url>
+          <line>80</line>
+          <option name="timeStamp" value="77" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="Application">
+        <watch expression="((AbstractMap.SimpleImmutableEntry)entity.headers.entrySet().toArray()[1]).getValue()" custom="java.util.AbstractMap.SimpleImmutableEntry" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/chat_bot_service$All_in_chat_bot_service__1_.ic" NAME="All in chat-bot-service (1) Coverage Results" MODIFIED="1620131382568" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/chat_bot_service$All_in_chat_bot_service___coverage.ic" NAME="All in chat-bot-service - coverage Coverage Results" MODIFIED="1620131533116" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false">
+      <FILTER>com.ultimate.cb.*</FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.constants.*</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.controller.exceptionHandler.*</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.exception.*</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.model.*</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.domain.*</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.util.CustomJackson2RepositoryPopulatorFactoryBean</EXCLUDED_FILTER>
+      <EXCLUDED_FILTER>com.ultimate.cb.util.CustomJackson2ResourceReader</EXCLUDED_FILTER>
+    </SUITE>
+  </component>
+</project>
