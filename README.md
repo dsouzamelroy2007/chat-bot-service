@@ -20,7 +20,8 @@ Swagger: Swagger endpoint:
 • As the spring boot application starts up, a json file with data corresponding to intents, replies and the confidence thresholds is uploaded to the mongo DB as a single collection. This is solely for the purpose of this assignment in order for the data to be available.
  
 Endpoints supported:
- 1. Chat Reply Endpoint
+
+1. Chat Reply Endpoint
 • This is a POST endpoint which will receive bot identifier and user’s message as input payload.
 • This input is then sent to an external AI endpoint to fetch a list of intents along with corresponding
 confidence levels that match the user’s message.
@@ -54,6 +55,8 @@ Response model for above endpoint:
 • The chat reply will be default if no relevant intent is matched as per the confidence threshold.
 • The timestamp is in human readable format, it sorts correctly and includes fractional seconds, which
 can help re-establish chronology. Most importantly it conforms to ISO 8601, which has been well- established internationally for more than a decade
+
+
 2. Intent Save Endpoint
 • This endpoint can be used to save a new intent into the mongo collection or update an existing intent with its confidence threshold or reply.
 • This will be useful only when we need to alter the confidence threshold based on the analytics data.
