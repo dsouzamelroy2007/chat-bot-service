@@ -1,5 +1,5 @@
 # chat-bot-service
- microservice that has APIs to give bot like replies
+ Microservice that has APIs to give bot-like replies
 
 Technologies Used
 Frameworks:
@@ -7,7 +7,7 @@ Frameworks:
 • SpringMongoDB • Hystrix
 • Junit
 • Mockito
-Infrastructure related:
+Infrastructure-related:
 • Docker • Maven
 Programming Languages
 • Java 11 • Bash
@@ -17,7 +17,7 @@ Swagger: Swagger endpoint:
     
     
   Initial setup :
-• As the spring boot application starts up, a json file with data corresponding to intents, replies and the confidence thresholds is uploaded to the mongo DB as a single collection. This is solely for the purpose of this assignment in order for the data to be available.
+• As the Spring Boot application starts up, a JSON file with data corresponding to intents, replies and the confidence thresholds is uploaded to the mongo DB as a single collection. This is solely for the purpose of this assignment in order for the data to be available.
  
 Endpoints supported:
 
