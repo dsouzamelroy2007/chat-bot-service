@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat Bot</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --border: #e2e4e9;
+    --text: #1c1e21;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --bot-bubble: #eef1f6;
+    --error: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181b;
+      --panel: #212226;
+      --border: #33353a;
+      --text: #e7e8ea;
+      --muted: #9aa0a8;
+      --bot-bubble: #2c2e33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .chat {
+    width: 100%;
+    max-width: 480px;
+    height: 640px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  }
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chat-header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .chat-header p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: var(--accent-text);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble.bot {
+    align-self: flex-start;
+    background: var(--bot-bubble);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.error {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid var(--error);
+    color: var(--error);
+  }
+  .bubble .meta {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    opacity: 0.65;
+  }
+  .typing {
+    align-self: flex-start;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 0 4px;
+  }
+  form {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+  }
+  input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+  <div class="chat">
+    <div class="chat-header">
+      <h1>Chat Bot</h1>
+      <p>Demo widget for the chat-bot-service API</p>
+    </div>
+    <div class="messages" id="messages"></div>
+    <form id="chat-form">
+      <input type="text" id="message-input" placeholder="Ask something…" autocomplete="off" required>
+      <button type="submit" id="send-button">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const BOT_ID = "web-widget";
+    const messagesEl = document.getElementById("messages");
+    const formEl = document.getElementById("chat-form");
+    const inputEl = document.getElementById("message-input");
+    const sendButton = document.getElementById("send-button");
+
+    function formatTime(date) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function addBubble(text, kind) {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + kind;
+      bubble.textContent = text;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = formatTime(new Date());
+      bubble.appendChild(meta);
+      messagesEl.appendChild(bubble);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return bubble;
+    }
+
+    function addTypingIndicator() {
+      const el = document.createElement("div");
+      el.className = "typing";
+      el.textContent = "Bot is typing…";
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return el;
+    }
+
+    formEl.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      addBubble(text, "user");
+      inputEl.value = "";
+      inputEl.disabled = true;
+      sendButton.disabled = true;
+
+      const typingEl = addTypingIndicator();
+
+      try {
+        const response = await fetch("chat/reply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ botId: BOT_ID, message: text })
+        });
+
+        const data = await response.json();
+        typingEl.remove();
+
+        if (!response.ok) {
+          addBubble(data.reply || "Something went wrong. Please try again.", "error");
+        } else {
+          addBubble(data.reply, "bot");
+        }
+      } catch (err) {
+        typingEl.remove();
+        addBubble("Could not reach the chat bot service.", "error");
+      } finally {
+        inputEl.disabled = false;
+        sendButton.disabled = false;
+        inputEl.focus();
+      }
+    });
+
+    addBubble("Hi! Ask me anything.", "bot");
+  </script>
+</body>
+</html>
