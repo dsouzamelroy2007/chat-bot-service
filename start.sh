@@ -28,6 +28,4 @@ else
 	echo "================================="
 fi
 
-docker container stop chatbotmongodb
-docker container rm chatbotmongodb
 docker-compose up -d
