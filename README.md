@@ -13,9 +13,9 @@ A Spring Boot microservice that gives AI-generated chat replies, backed by Claud
 
 ## Getting started
 
-**Prerequisites:** Maven, Java 21, and (for real AI replies) an `ANTHROPIC_API_KEY`.
+**Prerequisites:** Maven, Java 21, Docker (for Postgres/Redis, see below), and (for real AI replies) an `ANTHROPIC_API_KEY`.
 
-Set the key as an environment variable before starting the application — the service reads it via `spring.ai.anthropic.api-key` in `application.properties`:
+Set the key as an environment variable before starting the application — the service reads it via `spring.ai.anthropic.api-key` in `application.yml`. See [.env.example](.env.example) for every environment variable the app reads:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -24,6 +24,8 @@ export ANTHROPIC_API_KEY=sk-ant-...
 Optionally set `CHATBOT_MODEL` to override the default model (`claude-sonnet-5`).
 
 > Note: an Anthropic API key is billed separately from a Claude Pro/Max subscription — it is not included.
+
+The default profile also requires Postgres and Redis to be reachable at boot (`spring-boot-starter-data-jpa`/`-data-redis` are on the classpath in preparation for conversation memory). The quickest way to get both locally is `docker-compose up -d postgres redis`. The cost-free `local` profile below needs neither.
 
 ## Running the application
 
@@ -34,9 +36,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 sh start.sh
 ```
 
-This runs the test suite, builds a Docker image, and starts the service via `docker-compose`.
+This runs the test suite, builds a Docker image, and starts the full stack (app + Postgres + Redis) via `docker-compose`.
 
-**Option 2 — From an IDE.** Import the project (Maven), build it, and set `ANTHROPIC_API_KEY` in the run configuration's environment variables before running `ChatBotService`.
+**Option 2 — From an IDE.** Start Postgres and Redis (`docker-compose up -d postgres redis`), import the project (Maven), build it, and set `ANTHROPIC_API_KEY` (and, if `5432`/`6379` are already taken locally, `DB_HOST_PORT`/`REDIS_HOST_PORT`) in the run configuration's environment variables before running `ChatBotService`.
 
 Once running, the service listens on `http://localhost:8080/bot`.
 
@@ -66,7 +68,7 @@ A `local` Spring profile is provided so you can exercise the full HTTP flow — 
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-By default this runs on port `8090` (configurable via `server.port` in [application-local.properties](src/main/resources/application-local.properties), useful if `8080` is already taken locally).
+By default this runs on port `8090` (configurable via `server.port` in [application-local.yml](src/main/resources/application-local.yml), useful if `8080` is already taken locally). No Postgres or Redis needed either — the `local` profile disables their autoconfiguration too.
 
 Then either open the chat widget at `http://localhost:8090/bot/` and type a message, or use Swagger UI to try the endpoint directly:
 

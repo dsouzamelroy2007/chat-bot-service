@@ -13,19 +13,13 @@ if [ "$?" -ne 0 ]; then
 fi
 
 echo "================================="
-echo "Building docker image"
+echo "Building and starting the full stack (app + Postgres + Redis)"
 echo "================================="
 
-docker image build -t chat-bot-service .
+docker-compose up -d --build
 if [ "$?" -ne 0 ]; then
 	echo "================================="
-    echo "docker image not created!"
+    echo "docker-compose up failed!"
     echo "================================="
     exit 1
-else
-	echo "================================="
-	echo "Docker image created"
-	echo "================================="
 fi
-
-docker-compose up -d

@@ -1,10 +1,47 @@
-version: "3.8"
 services:
   web:
-    image : chat-bot-service
+    build: .
+    image: chat-bot-service
     container_name: chatbotservice
     ports:
       - 8080:8080
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CHATBOT_MODEL=${CHATBOT_MODEL:-claude-sonnet-5}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-chatbot}
+      - DB_USER=${DB_USER:-chatbot}
+      - DB_PASSWORD=${DB_PASSWORD:-chatbot}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: chatbotservice-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME:-chatbot}
+      - POSTGRES_USER=${DB_USER:-chatbot}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-chatbot}
+    ports:
+      - ${DB_HOST_PORT:-5432}:5432
+    volumes:
+      - chatbot-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: chatbotservice-redis
+    restart: unless-stopped
+    ports:
+      - ${REDIS_HOST_PORT:-6379}:6379
+    volumes:
+      - chatbot-redis-data:/data
+
+volumes:
+  chatbot-postgres-data:
+  chatbot-redis-data:

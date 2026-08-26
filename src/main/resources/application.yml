@@ -1,0 +1,69 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /bot
+
+spring:
+  application:
+    name: chat-bot-service
+  main:
+    allow-bean-definition-overriding: true
+  # The OpenAI starter (added in Phase 0 for Phase 1's OpenAI-compatible providers) bundles
+  # autoconfiguration for chat, embedding, image, moderation, and audio models. All of them build
+  # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY -- and
+  # the chat one also collides with AnthropicChatAutoConfiguration since both are unconditionally
+  # active by default. None of them fit the multi-provider list shape in chatbot.providers anyway;
+  # Phase 1's ProviderRouter builds OpenAiApi/OpenAiChatModel instances programmatically per
+  # provider entry instead of relying on this single, statically-configured autoconfiguration.
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}
+    username: ${DB_USER:chatbot}
+    password: ${DB_PASSWORD:chatbot}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        options:
+          model: ${CHATBOT_MODEL:claude-sonnet-5}
+
+management:
+  metrics:
+    web:
+      server:
+        auto-time-requests: false
+
+logging:
+  level:
+    root: INFO
+
+resilience4j:
+  timelimiter:
+    instances:
+      chatReply:
+        timeout-duration: 20s
+  circuitbreaker:
+    instances:
+      chatReply:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+
+chatbot:
+  system-prompt: You are a helpful, friendly customer support chat bot. Keep replies concise.

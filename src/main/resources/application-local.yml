@@ -1,0 +1,23 @@
+server:
+  port: 8090
+
+spring:
+  # spring.autoconfigure.exclude is a list property: a profile-specific file completely replaces
+  # the base application.yml's list rather than merging with it, so every exclusion needed here
+  # (including the OpenAI starter ones from application.yml) has to be repeated in full.
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+  ai:
+    anthropic:
+      api-key: unused-in-local-profile
