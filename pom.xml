@@ -27,6 +27,21 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- spring-boot-starter-parent manages plain org.eclipse.jetty:* artifacts up to 12.1.10 for
+      its own optional embedded-Jetty support (unused here, this project runs on Tomcat). That
+      version has no matching org.eclipse.jetty.ee10:* release yet, so it silently breaks
+      wiremock-jetty12 3.13.2 (test scope only), which needs both groups on the same 12.0.x line:
+      NoSuchMethodError on Environment.ensure(String) at WireMock server startup otherwise. Importing
+      jetty-bom 12.0.30, wiremock-jetty12's own declared version, here in our own
+      dependencyManagement overrides the parent's inherited management for just these test-scoped
+      artifacts. -->
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>12.0.30</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

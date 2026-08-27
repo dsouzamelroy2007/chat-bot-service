@@ -13,8 +13,10 @@ spring:
   # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY -- and
   # the chat one also collides with AnthropicChatAutoConfiguration since both are unconditionally
   # active by default. None of them fit the multi-provider list shape in chatbot.providers anyway;
-  # Phase 1's ProviderRouter builds OpenAiApi/OpenAiChatModel instances programmatically per
-  # provider entry instead of relying on this single, statically-configured autoconfiguration.
+  # ProviderRouter builds OpenAiChatModel/AnthropicChatModel instances programmatically per
+  # provider entry (com.mel.cb.provider) instead of relying on either starter's autoconfiguration
+  # -- Anthropic's is excluded here for the same reason: chatbot.anthropic is optional and
+  # non-default, so a default boot must not require ANTHROPIC_API_KEY to be set at all.
   autoconfigure:
     exclude:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
@@ -23,6 +25,7 @@ spring:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}
     username: ${DB_USER:chatbot}
@@ -37,12 +40,6 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-  ai:
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY}
-      chat:
-        options:
-          model: ${CHATBOT_MODEL:claude-sonnet-5}
 
 management:
   metrics:
@@ -67,3 +64,76 @@ resilience4j:
 
 chatbot:
   system-prompt: You are a helpful, friendly customer support chat bot. Keep replies concise.
+
+  # Optional, non-default paid fallback -- off by default so a default boot needs no Anthropic
+  # key at all. When enabled it's given the lowest priority (tried last, after every free-tier
+  # provider below is exhausted) via AnthropicChatProvider.
+  anthropic:
+    enabled: false
+    model: ${CHATBOT_MODEL:claude-sonnet-5}
+    api-key-env: ANTHROPIC_API_KEY
+    priority: 1000
+
+  # Free-tier OpenAI-compatible providers, tried in priority order by ProviderRouter. Each
+  # `limits` block is what QuotaTracker checks against (90% of either cap skips the provider for
+  # the rest of the UTC day); the verified-on comment records when these numbers were last
+  # checked against the provider's own docs, since free-tier terms change without notice.
+  providers:
+    - id: gemini
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      model: gemini-2.5-flash
+      api-key-env: GEMINI_API_KEY
+      priority: 1
+      limits:
+        requests-per-day: 250
+        tokens-per-day: 50000000
+        # verified-on: 2026-08-28 -- Google AI Studio free tier, gemini-2.5-flash: 10 RPM / 250
+        # RPD / 250K TPM per official docs. No published per-day token cap; tokens-per-day here
+        # is a generous non-binding safety ceiling -- requests-per-day is the real constraint.
+    - id: groq
+      base-url: https://api.groq.com/openai/v1
+      model: llama-3.3-70b-versatile
+      api-key-env: GROQ_API_KEY
+      priority: 2
+      limits:
+        requests-per-day: 14400
+        tokens-per-day: 100000
+        # verified-on: 2026-08-28 -- Groq free tier, llama-3.3-70b-versatile: 30 RPM / 14,400 RPD.
+        # Per-model TPM is reported as 6K-20K depending on model; ~100K tokens/day is the commonly
+        # cited practical ceiling for steady use of this model -- treat as approximate.
+    - id: cerebras
+      base-url: https://api.cerebras.ai/v1
+      model: llama-3.3-70b
+      api-key-env: CEREBRAS_API_KEY
+      priority: 3
+      limits:
+        requests-per-day: 7200
+        tokens-per-day: 1000000
+        # verified-on: 2026-08-28 -- Cerebras free tier: 1M tokens/day is consistently documented
+        # across official and third-party sources. RPM is reported inconsistently (5-30 RPM
+        # depending on source/model), so requests-per-day is a conservative derived estimate
+        # (5 RPM x 1440 min), not an official daily figure.
+    - id: mistral
+      base-url: https://api.mistral.ai/v1
+      model: mistral-small-latest
+      api-key-env: MISTRAL_API_KEY
+      priority: 4
+      limits:
+        requests-per-day: 500
+        tokens-per-day: 33000000
+        # verified-on: 2026-08-28 -- Mistral no longer publishes exact free-tier ("Experiment"
+        # plan) rate limits; ~1B tokens/month is commonly cited (~33M/day here). requests-per-day
+        # is a conservative placeholder -- check https://admin.mistral.ai/plateforme/limits and
+        # adjust before relying on this in production.
+    - id: openrouter
+      base-url: https://openrouter.ai/api/v1
+      model: "deepseek/deepseek-chat-v3.1:free"
+      api-key-env: OPENROUTER_API_KEY
+      priority: 5
+      limits:
+        requests-per-day: 50
+        tokens-per-day: 100000000
+        # verified-on: 2026-08-28 -- OpenRouter free-model daily cap: 50 requests/day with no
+        # purchased credit balance (rises to 1000/day after any $10+ lifetime purchase), 20 RPM.
+        # OpenRouter meters free models by request count, not tokens, so tokens-per-day here is a
+        # generous non-binding safety ceiling.

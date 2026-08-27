@@ -3,9 +3,10 @@ package com.mel.cb.service;
 import com.mel.cb.exception.AiReplyException;
 import com.mel.cb.model.ChatMessage;
 import com.mel.cb.model.ChatReply;
+import com.mel.cb.provider.ProviderRouter;
 import com.mel.cb.util.ChatDataUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,22 +15,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class ChatReplyService {
 
-  private final ChatClient chatClient;
+  private final ProviderRouter providerRouter;
 
   @Value("${chatbot.system-prompt}")
   private String systemPrompt;
 
-  public ChatReplyService(ChatClient.Builder chatClientBuilder) {
-    this.chatClient = chatClientBuilder.build();
+  public ChatReplyService(ProviderRouter providerRouter) {
+    this.providerRouter = providerRouter;
   }
 
   public ChatReply getReplyForUserMessage(ChatMessage chatMessage){
     try {
-      String replyText = chatClient.prompt()
-          .system(systemPrompt)
-          .user(chatMessage.getMessage())
-          .call()
-          .content();
+      ChatResponse response = providerRouter.getReply(systemPrompt, chatMessage.getMessage());
+      String replyText = response.getResult() != null ? response.getResult().getOutput().getText() : null;
       return ChatDataUtil.getChatReplyFromText(replyText);
     } catch (Exception e) {
       log.error("Exception while fetching AI reply for message {}", chatMessage, e);
