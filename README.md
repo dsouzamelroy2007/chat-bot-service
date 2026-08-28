@@ -109,7 +109,7 @@ Receives a bot identifier and the user's message, sends the message to whichever
 **Edge cases handled:**
 
 - If the call to the LLM provider takes longer than 20 seconds, or every provider fails, a Resilience4j circuit breaker trips and a default reply is returned instead of hanging the request.
-- If the input payload has a missing bot identifier or message, a 400 client error is thrown from the endpoint.
+- If the input payload has a missing/blank bot identifier, user id, or message, or the message exceeds 4000 characters, a 400 client error is thrown from the endpoint.
 - All other exceptions are wrapped into user-friendly exceptions with appropriate messages.
 
 **Response model (`ChatReply`):**
@@ -127,6 +127,16 @@ Same request body as `/chat/reply`, but streams the reply via Server-Sent Events
 - On failure, a final event named `error` with a user-facing message, then the stream closes normally.
 
 Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (see `docs/PLAN.md` Phase 4 notes for why). There's also no 20s circuit-breaker timeout on this endpoint, since a streamed reply can legitimately take longer than that to finish.
+
+## Security
+
+`/chat/**` is hardened for public exposure with a few lightweight, independently-configurable layers (see `chatbot.security` in [application.yml](src/main/resources/application.yml) and `docs/PLAN.md` Phase 5 notes). All are safe defaults out of the box — a from-scratch self-host still boots and works with nothing configured here:
+
+- **Request size limit** — a request over 8 KB is rejected with `413` before its body is parsed; the 4000-character `message` cap above is a second, independent check on the parsed value.
+- **Rate limiting** — 20 requests/minute per client IP (`X-Forwarded-For` if present, else the socket address); a client over that limit gets `429` with `Retry-After: 60`. This is separate from each LLM provider's own daily quota tracking done further downstream — it protects this service's own front door, not the providers behind it.
+- **API key auth** — set `CHATBOT_API_KEY` and every `/chat/**` request must include a matching `X-API-Key` header, or it's rejected with `401`. Unset (the default) means no auth check at all — a startup log warns when this is the case. This is a single shared secret between your own client(s) and the API, not per-user auth; a publicly-hosted static widget baking this key into its page source can't keep it secret from a visitor who views source, only from anonymous scripts/bots and other origins (still gated by `CHATBOT_CORS_ALLOWED_ORIGINS`).
+- **Security response headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on every response, plus `Cache-Control: no-store` on `/chat/**` replies.
+- **Actuator** exposes only `/actuator/health` (no details) over HTTP — everything else is off by default.
 
 ## Conversation memory
 

@@ -120,6 +120,26 @@ public class ChatReplyControllerTest {
   }
 
   @Test
+  public void testGetChatReplyIsBadRequestForBlankMessage() throws Exception {
+    ChatMessage blankMessage = new ChatMessage("bot-1", "user-123", "   ", null);
+
+    this.mockMvc.perform(post("/chat/reply")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(getObjectAsString(blankMessage)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void testGetChatReplyIsBadRequestForMessageOverMaxLength() throws Exception {
+    ChatMessage tooLong = new ChatMessage("bot-1", "user-123", "a".repeat(4001), null);
+
+    this.mockMvc.perform(post("/chat/reply")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(getObjectAsString(tooLong)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   public void testGetChatReplyisValidRequest() throws Exception {
     when(chatReplyService.getReplyForUserMessage(any(ChatMessage.class)))
         .thenReturn(chatReply);

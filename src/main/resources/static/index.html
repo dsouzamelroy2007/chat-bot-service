@@ -165,6 +165,13 @@
     //   <script>window.CHAT_API_BASE_URL = "https://your-backend.example.com/bot";</script>
     // before this block. See docs/PLAN.md Phase 4 notes and the widget/ deployment README.
     const API_BASE_URL = window.CHAT_API_BASE_URL || "";
+    // Only needed if the backend has chatbot.security.api-key (CHATBOT_API_KEY) set (Phase 5,
+    // docs/PLAN.md) -- set via window.CHAT_API_KEY = "..."; before this block, same pattern as
+    // CHAT_API_BASE_URL above. Note this is a shared secret with the backend, not a per-visitor
+    // one: anyone viewing this page's source can read it. It stops anonymous scripts/bots that
+    // don't bother and off-origin callers (still blocked by the backend's own CORS allow-list),
+    // not a determined visitor of the widget itself.
+    const API_KEY = window.CHAT_API_KEY || "";
     const BOT_ID = "web-widget";
     const USER_ID = getOrCreateId("chatbot_user_id");
     let conversationId = localStorage.getItem("chatbot_conversation_id") || null;
@@ -247,9 +254,12 @@
       let botBubble = null;
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (API_KEY) headers["X-API-Key"] = API_KEY;
+
         const response = await fetch(API_BASE_URL + "/chat/reply/stream", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ botId: BOT_ID, userId: USER_ID, message: text, conversationId })
         });
 
