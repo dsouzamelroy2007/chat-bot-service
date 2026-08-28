@@ -1,0 +1,61 @@
+# Render Blueprint (Phase 6, docs/PLAN.md) -- optional convenience for "New +" > "Blueprint" in the
+# Render dashboard, pointed at this repo. Not verified against a live Render account (no account
+# access from the environment this was written in) -- if it fails to parse or apply, fall back to
+# the manual "New +" > "Web Service" steps in docs/DEPLOY_BACKEND.md, which are the source of truth.
+#
+# Every secret (`sync: false`) is intentionally left for you to fill in via the Render dashboard
+# after the blueprint applies -- none of them belong in this committed file. See
+# docs/DEPLOY_BACKEND.md for what each one is and where to get it.
+services:
+  - type: web
+    name: chat-bot-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /bot/actuator/health
+    envVars:
+      # --- Postgres (Neon) -- see docs/DEPLOY_BACKEND.md ---
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      # --- Redis (Upstash) -- see docs/DEPLOY_BACKEND.md ---
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL_ENABLED
+        value: "true"
+      # --- At least one of these free-tier LLM provider keys, or every reply falls back to the
+      # canned "no reply" response -- see .env.example for where to get each one for free. ---
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # --- Tools (Phase 3), both optional ---
+      - key: OPENROUTESERVICE_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      # --- Public-facing hardening (Phase 5) -- strongly recommended once this is on the public
+      # internet. CHATBOT_API_KEY unset means /chat/** stays unauthenticated. ---
+      - key: CHATBOT_API_KEY
+        sync: false
+      - key: CHATBOT_CORS_ALLOWED_ORIGINS
+        sync: false

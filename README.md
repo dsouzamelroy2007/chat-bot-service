@@ -1,14 +1,17 @@
 # chat-bot-service
 
-A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Cerebras, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
+A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Cerebras, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. It remembers a conversation (Redis + Postgres), can call a handful of tools mid-reply (weather, time, directions, web search), streams replies token-by-token over SSE, and is hardened for public exposure (rate limiting, request limits, optional API-key auth). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
+
+**Contents:** [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Running the application](#running-the-application) · [Chat widget](#chat-widget) · [Testing](#testing) · [API](#api) · [Security](#security) · [Conversation memory](#conversation-memory) · [Tools](#tools) · [Deployment](#deployment) · [Further improvements](#further-improvements)
 
 ## Tech stack
 
 | Category | Technologies |
 |---|---|
 | Frameworks | Spring Boot 4.1 · Spring AI (multi-provider, free-tier-first) · Resilience4j · springdoc-openapi |
-| Testing | JUnit · Mockito |
-| Infrastructure | Docker · Maven |
+| Data | Postgres (durable user facts, via Flyway) · Redis (conversation memory, quota/rate-limit counters) |
+| Testing | JUnit · Mockito · Testcontainers · WireMock |
+| Infrastructure | Docker · Maven · Render (app) · Neon (Postgres) · Upstash (Redis) |
 | Languages | Java 21 · Bash |
 
 ## Getting started
@@ -154,6 +157,23 @@ The model can call a few tools mid-conversation when it decides one would help a
 | Web search | Yes — `TAVILY_API_KEY` | [Tavily](https://tavily.com) free tier |
 
 Weather and time work out of the box. Directions and web search are off until their key is set — see [.env.example](.env.example) for where to get a free one.
+
+## Deployment
+
+The app, its Postgres, and its Redis can each be hosted for free, separately:
+
+| Piece | Target | Why |
+|---|---|---|
+| App | [Render](https://render.com) | Builds straight from the repo's own `Dockerfile` as a Web Service. |
+| Postgres | [Neon](https://neon.tech) | Serverless Postgres with a permanent free tier (Render's own Postgres no longer has one). |
+| Redis | [Upstash](https://upstash.com) | Serverless Redis with a permanent free tier (same reasoning as Neon). |
+
+See [docs/DEPLOY_BACKEND.md](docs/DEPLOY_BACKEND.md) for the full walkthrough (env vars, health check
+path, Neon/Upstash-specific config) and [render.yaml](render.yaml) for an optional Blueprint. The
+widget can be deployed separately too (e.g. to Vercel) — see
+[docs/DEPLOY_WIDGET.md](docs/DEPLOY_WIDGET.md). Neither has been executed against a real account
+from this repo; both docs are written and ready to follow, not a confirmation that it's live
+somewhere.
 
 ## Further improvements
 

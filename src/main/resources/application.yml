@@ -1,5 +1,7 @@
 server:
-  port: 8080
+  # PORT (Phase 6, docs/PLAN.md) -- Render, like most PaaS hosts, injects its own PORT env var and
+  # requires the app to listen on it; unset (local/docker-compose) falls back to the existing 8080.
+  port: ${PORT:8080}
   servlet:
     context-path: /bot
 
@@ -23,7 +25,13 @@ spring:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}
+    # sslmode (Phase 6, docs/PLAN.md) -- "prefer" (pgjdbc's own default is unset/plain, confirmed by
+    # decompiling PGProperty rather than assumed) negotiates SSL when the server offers it and falls
+    # back to plaintext when it doesn't, so this is a no-op against the local/docker-compose
+    # Postgres (no SSL configured there) and works unchanged against a host that requires it (e.g.
+    # Neon) -- though Neon's own docs recommend DB_SSLMODE=require explicitly, see
+    # docs/DEPLOY_BACKEND.md.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}?sslmode=${DB_SSLMODE:prefer}
     username: ${DB_USER:chatbot}
     password: ${DB_PASSWORD:chatbot}
   jpa:
@@ -36,6 +44,15 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Both optional, blank/false by default (Phase 6, docs/PLAN.md) -- local/docker-compose Redis
+      # needs neither. A hosted Redis (e.g. Upstash) typically requires both: REDIS_PASSWORD is the
+      # token/password Redis sends via AUTH (a blank value here resolves to RedisPassword.none(),
+      # confirmed by decompiling spring-data-redis rather than assumed -- no AUTH command is sent,
+      # so this is a no-op against a password-less local Redis), and REDIS_SSL_ENABLED=true switches
+      # the Lettuce client to TLS. See docs/DEPLOY_BACKEND.md.
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
 
 management:
   metrics:
