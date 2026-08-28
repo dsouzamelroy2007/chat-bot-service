@@ -14,6 +14,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 /**
  * Tries {@link ChatProvider}s in priority order, skipping ones that are disabled, over their
@@ -79,6 +80,57 @@ public class ProviderRouter {
         circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
         log.warn("Provider {} failed, trying next provider: {}", id, e.getMessage());
       }
+    }
+    throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
+  }
+
+  /**
+   * Streaming counterpart to {@link #getReply}, for the SSE endpoint (Phase 4). Applies the same
+   * skip logic (disabled/over-quota/circuit-open/rate-limited) to pick the first viable provider,
+   * but -- deliberately, unlike {@link #getReply} -- does <b>not</b> fail over to the next provider
+   * if that one errors after streaming has already started: partial tokens may already be on their
+   * way to the client, and retrying would mean replaying or duplicating output rather than cleanly
+   * substituting a whole response the way failover does for the non-streaming path. A failure here
+   * just ends the stream; the caller (ChatReplyService) turns that into a client-visible SSE error
+   * event. Per-chunk token usage isn't reliably available mid-stream, so successful streams are
+   * recorded to {@link QuotaTracker} as a request only (0 tokens) -- enough for the request-count-
+   * metered free tiers (e.g. OpenRouter) to still see streaming traffic, without pretending to know
+   * an exact token count.
+   */
+  public Flux<ChatResponse> streamReply(Prompt prompt) {
+    for (ChatProvider provider : registry.all()) {
+      String id = provider.getProviderId();
+      if (!provider.isEnabled()) {
+        log.debug("Skipping provider {}: disabled", id);
+        continue;
+      }
+      if (isOverQuota(provider)) {
+        log.info("Skipping provider {}: at/above 90% of its daily quota", id);
+        continue;
+      }
+      CircuitBreaker circuitBreaker = circuitBreakers.get(id);
+      if (!circuitBreaker.tryAcquirePermission()) {
+        log.info("Skipping provider {}: circuit breaker open", id);
+        continue;
+      }
+      RateLimiter rateLimiter = rateLimiters.get(id);
+      if (!rateLimiter.acquirePermission()) {
+        circuitBreaker.releasePermission();
+        log.info("Skipping provider {}: rate limit exceeded", id);
+        continue;
+      }
+      long start = System.nanoTime();
+      return provider.streamReply(prompt)
+          .doOnComplete(() -> {
+            circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+            if (provider.getLimits() != null && quotaTracker != null) {
+              quotaTracker.recordUsage(id, 0);
+            }
+          })
+          .doOnError(e -> {
+            circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
+            log.warn("Provider {} failed while streaming: {}", id, e.getMessage());
+          });
     }
     throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
   }

@@ -124,6 +124,14 @@
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- For StepVerifier, testing ProviderRouter.streamReply's Flux (Phase 4): not pulled in by
+         spring-boot-starter-test despite reactor-core itself being present transitively via
+         Spring AI. -->
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-test</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-testcontainers</artifactId>

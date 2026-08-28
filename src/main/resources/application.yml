@@ -61,6 +61,13 @@ resilience4j:
 chatbot:
   system-prompt: You are a helpful, friendly customer support chat bot. Keep replies concise.
 
+  # Origins allowed to call /chat/** cross-origin (Phase 4, docs/PLAN.md) -- needed once the widget
+  # is hosted separately (Vercel) rather than served same-origin by this app. Defaults cover common
+  # local static-file dev servers; set CHATBOT_CORS_ALLOWED_ORIGINS to the real deployed widget
+  # origin(s), comma-separated. Broader public-facing hardening is Phase 5's job, not this one's.
+  cors:
+    allowed-origins: ${CHATBOT_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500}
+
   # Conversation memory (Phase 2, docs/PLAN.md): per-conversation history/summary live in Redis
   # with a sliding TTL (refreshed on every turn) approximating a single chat session; user-facts
   # extracted from evicted turns are persisted to Postgres and outlive the session. session-ttl

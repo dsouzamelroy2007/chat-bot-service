@@ -5,9 +5,11 @@ import static com.mel.cb.util.ChatDataUtil.readFileData;
 import static com.mel.cb.util.MockDataCreator.getChatMessageForTest;
 import static com.mel.cb.util.MockDataCreator.getChatReplyForTest;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,6 +33,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest
@@ -129,6 +132,35 @@ public class ChatReplyControllerTest {
 
     this.mockMvc.perform(asyncDispatch(result))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  public void testStreamReplyToUserReturnsEventStream() throws Exception {
+    doAnswer(invocation -> {
+      SseEmitter emitter = invocation.getArgument(1);
+      emitter.send(SseEmitter.event().name("conversation").data("conv-1"));
+      emitter.send(SseEmitter.event().data("Hello"));
+      emitter.complete();
+      return null;
+    }).when(chatReplyService).streamReplyForUserMessage(any(ChatMessage.class), any(SseEmitter.class));
+
+    MvcResult result = this.mockMvc.perform(post("/chat/reply/stream")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(getObjectAsString(chatMessage)))
+        .andExpect(request().asyncStarted())
+        .andReturn();
+
+    this.mockMvc.perform(asyncDispatch(result))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+  }
+
+  @Test
+  public void testStreamReplyToUserIsBadRequestForInvalidInput() throws Exception {
+    this.mockMvc.perform(post("/chat/reply/stream")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(readFileData("ChatMessageInvalidInput.json")))
+        .andExpect(status().isBadRequest());
   }
 
 }

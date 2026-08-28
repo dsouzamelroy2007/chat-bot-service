@@ -42,11 +42,13 @@ Once running, the service listens on `http://localhost:8080/bot`.
 
 ## Chat widget
 
-A minimal static chat widget ([src/main/resources/static/index.html](src/main/resources/static/index.html)) is served by the same application at `http://localhost:8080/bot/`. It's a single self-contained HTML page — no build step, no separate frontend project — that calls `POST /chat/reply` and renders the conversation.
+A minimal static chat widget ([src/main/resources/static/index.html](src/main/resources/static/index.html)) is served by the same application at `http://localhost:8080/bot/`. It's a single self-contained HTML page — no build step, no separate frontend project — that streams replies via `POST /chat/reply/stream` and renders them token-by-token as they arrive.
 
 ![Chat widget showing a user message and the bot's reply](docs/screenshots/chat-widget.png)
 
-It's meant as a quick way to try the bot in a browser, not as a production UI. The `POST /chat/reply` endpoint remains fully documented via Swagger/OpenAPI (see below) so a real, separately-hosted front end can integrate against it directly.
+It's meant as a quick way to try the bot in a browser, not as a production UI. Both `/chat/reply` and `/chat/reply/stream` remain fully documented via Swagger/OpenAPI (see below) so a real, separately-hosted front end can integrate against either directly.
+
+The widget can also be deployed on its own, separate from the backend (e.g. to Vercel) — see [docs/DEPLOY_WIDGET.md](docs/DEPLOY_WIDGET.md). Once split across two origins like that, the backend needs `CHATBOT_CORS_ALLOWED_ORIGINS` set to the widget's origin (see [.env.example](.env.example)); same-origin (the default, widget served by this app) needs no CORS configuration at all.
 
 ## Testing
 
@@ -115,6 +117,16 @@ Receives a bot identifier and the user's message, sends the message to whichever
 - `reply` — the chat reply text. Falls back to a default message if the AI call fails or the circuit breaker trips.
 - `timestamp` — ISO 8601 format with fractional seconds, human-readable and chronologically sortable.
 - `conversationId` — identifies the conversation for follow-up turns. Echoed back if the request included one, otherwise a new id is minted and returned here — pass it back on the next request to continue the same conversation (see [Conversation memory](#conversation-memory)).
+
+### `POST /chat/reply/stream`
+
+Same request body as `/chat/reply`, but streams the reply via Server-Sent Events (`text/event-stream`) as it's generated instead of waiting for the full response. Not `EventSource`-compatible by design (`EventSource` can't `POST` a JSON body) — consume it with `fetch()` and read `response.body` as a stream, as the widget does.
+
+- First event, named `conversation`: the conversation id (always sent, even for a brand-new conversation — there's no response header for it, since a streaming controller method returning `SseEmitter` doesn't expose one).
+- Each following (default-named) event: one text chunk to append to the reply so far.
+- On failure, a final event named `error` with a user-facing message, then the stream closes normally.
+
+Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (see `docs/PLAN.md` Phase 4 notes for why). There's also no 20s circuit-breaker timeout on this endpoint, since a streamed reply can legitimately take longer than that to finish.
 
 ## Conversation memory
 

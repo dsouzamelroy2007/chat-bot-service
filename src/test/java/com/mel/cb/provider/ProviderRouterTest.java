@@ -20,6 +20,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.ObjectProvider;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
 class ProviderRouterTest {
@@ -117,6 +119,64 @@ class ProviderRouterTest {
     router.getReply(prompt);
 
     verify(quotaTracker).recordUsage("primary", 42L);
+  }
+
+  @Test
+  void streamPicksFirstViableProviderWithoutFailover() {
+    when(primary.isEnabled()).thenReturn(true);
+    ChatResponse chunk = chatResponse("hello");
+    when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
+
+    Flux<ChatResponse> result = router.streamReply(prompt);
+
+    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    verify(secondary, never()).streamReply(any(Prompt.class));
+  }
+
+  @Test
+  void streamSkipsDisabledProviderWithoutCallingIt() {
+    when(primary.isEnabled()).thenReturn(false);
+    when(secondary.isEnabled()).thenReturn(true);
+    ChatResponse chunk = chatResponse("hello from secondary");
+    when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
+
+    Flux<ChatResponse> result = router.streamReply(prompt);
+
+    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    verify(primary, never()).streamReply(any(Prompt.class));
+  }
+
+  @Test
+  void streamDoesNotFailOverWhenTheChosenProviderErrorsMidStream() {
+    when(primary.isEnabled()).thenReturn(true);
+    RuntimeException failure = new RuntimeException("connection reset mid-stream");
+    when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.concat(Flux.just(chatResponse("partial")), Flux.error(failure)));
+
+    Flux<ChatResponse> result = router.streamReply(prompt);
+
+    StepVerifier.create(result).expectNextCount(1).verifyErrorMatches(e -> e == failure);
+    verify(secondary, never()).streamReply(any(Prompt.class));
+  }
+
+  @Test
+  void streamThrowsProvidersExhaustedWhenNoProviderIsViable() {
+    when(primary.isEnabled()).thenReturn(false);
+    when(secondary.isEnabled()).thenReturn(false);
+
+    assertThrows(ProvidersExhaustedException.class, () -> router.streamReply(prompt));
+  }
+
+  @Test
+  void streamRecordsRequestOnlyUsageOnCompletionWhenLimitsPresent() {
+    ProviderLimits limits = new ProviderLimits(100, 1000);
+    when(primary.isEnabled()).thenReturn(true);
+    when(primary.getLimits()).thenReturn(limits);
+    when(quotaTracker.isOverQuota("primary", limits)).thenReturn(false);
+    when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chatResponse("ok")));
+
+    StepVerifier.create(router.streamReply(prompt)).expectNextCount(1).verifyComplete();
+
+    verify(quotaTracker).recordUsage("primary", 0L);
   }
 
   private static ChatResponse chatResponse(String text) {

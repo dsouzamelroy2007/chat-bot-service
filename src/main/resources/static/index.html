@@ -159,11 +159,29 @@
   </div>
 
   <script>
+    // Same-origin by default (relative fetch, unchanged from before). Set this to the deployed
+    // backend's URL (no trailing slash) when this file is hosted standalone -- e.g. on Vercel,
+    // separately from the Spring Boot app -- by adding
+    //   <script>window.CHAT_API_BASE_URL = "https://your-backend.example.com/bot";</script>
+    // before this block. See docs/PLAN.md Phase 4 notes and the widget/ deployment README.
+    const API_BASE_URL = window.CHAT_API_BASE_URL || "";
     const BOT_ID = "web-widget";
+    const USER_ID = getOrCreateId("chatbot_user_id");
+    let conversationId = localStorage.getItem("chatbot_conversation_id") || null;
+
     const messagesEl = document.getElementById("messages");
     const formEl = document.getElementById("chat-form");
     const inputEl = document.getElementById("message-input");
     const sendButton = document.getElementById("send-button");
+
+    function getOrCreateId(storageKey) {
+      let id = localStorage.getItem(storageKey);
+      if (!id) {
+        id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+        localStorage.setItem(storageKey, id);
+      }
+      return id;
+    }
 
     function formatTime(date) {
       return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -172,7 +190,10 @@
     function addBubble(text, kind) {
       const bubble = document.createElement("div");
       bubble.className = "bubble " + kind;
-      bubble.textContent = text;
+      const content = document.createElement("span");
+      content.className = "content";
+      content.textContent = text;
+      bubble.appendChild(content);
       const meta = document.createElement("span");
       meta.className = "meta";
       meta.textContent = formatTime(new Date());
@@ -182,6 +203,11 @@
       return bubble;
     }
 
+    function appendToBubble(bubble, textChunk) {
+      bubble.querySelector(".content").textContent += textChunk;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
     function addTypingIndicator() {
       const el = document.createElement("div");
       el.className = "typing";
@@ -189,6 +215,22 @@
       messagesEl.appendChild(el);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       return el;
+    }
+
+    // Parses one "event: name\ndata: line1\ndata: line2" SSE frame (already split on the blank
+    // line that terminates it) into { event, data }. `event` defaults to "message" per the SSE
+    // spec when no `event:` line is present, matching how a native EventSource would report it.
+    function parseSseFrame(raw) {
+      let eventName = "message";
+      const dataLines = [];
+      for (const line of raw.split("\n")) {
+        if (line.startsWith("event:")) {
+          eventName = line.slice(6).trim();
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice(5).trim());
+        }
+      }
+      return { event: eventName, data: dataLines.length ? dataLines.join("\n") : undefined };
     }
 
     formEl.addEventListener("submit", async (event) => {
@@ -202,24 +244,57 @@
       sendButton.disabled = true;
 
       const typingEl = addTypingIndicator();
+      let botBubble = null;
 
       try {
-        const response = await fetch("chat/reply", {
+        const response = await fetch(API_BASE_URL + "/chat/reply/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ botId: BOT_ID, message: text })
+          body: JSON.stringify({ botId: BOT_ID, userId: USER_ID, message: text, conversationId })
         });
 
-        const data = await response.json();
-        typingEl.remove();
+        if (!response.ok || !response.body) {
+          typingEl.remove();
+          addBubble("Something went wrong. Please try again.", "error");
+          return;
+        }
 
-        if (!response.ok) {
-          addBubble(data.reply || "Something went wrong. Please try again.", "error");
-        } else {
-          addBubble(data.reply, "bot");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let boundary;
+          while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+            const frame = parseSseFrame(buffer.slice(0, boundary));
+            buffer = buffer.slice(boundary + 2);
+            if (frame.data === undefined) continue;
+
+            if (frame.event === "conversation") {
+              conversationId = frame.data;
+              localStorage.setItem("chatbot_conversation_id", conversationId);
+            } else if (frame.event === "error") {
+              if (typingEl.isConnected) typingEl.remove();
+              addBubble(frame.data, "error");
+            } else {
+              if (!botBubble) {
+                typingEl.remove();
+                botBubble = addBubble("", "bot");
+              }
+              appendToBubble(botBubble, frame.data);
+            }
+          }
+        }
+
+        if (!botBubble && typingEl.isConnected) {
+          typingEl.remove();
         }
       } catch (err) {
-        typingEl.remove();
+        if (typingEl.isConnected) typingEl.remove();
         addBubble("Could not reach the chat bot service.", "error");
       } finally {
         inputEl.disabled = false;

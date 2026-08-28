@@ -19,11 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/chat")
@@ -31,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Chat Reply", description = "REST APIs that are used by chat bots to provide replies to user messages")
 public class ChatReplyController {
 
+  /** Generous but bounded -- independent of the sync endpoint's 20s resilience4j TimeLimiter, which
+   * would be wrong for a response that can legitimately take longer to fully stream out. */
+  private static final long STREAM_TIMEOUT_MS = 60_000L;
 
   @Autowired
   private ChatReplyService chatReplyService;
@@ -70,6 +75,14 @@ public class ChatReplyController {
     ChatReply chatReply = ChatDataUtil.getChatReplyFromText(null);
     chatReply.setConversationId(chatMessage.getConversationId());
     return CompletableFuture.completedFuture(new ResponseEntity<>(chatReply, HttpStatus.BAD_GATEWAY));
+  }
+
+  @Operation(summary = "Stream an AI-generated reply to the user's message via Server-Sent Events")
+  @RequestMapping(method = RequestMethod.POST, value = "/reply/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter streamReplyToUser(@Valid @RequestBody ChatMessage chatMessage) {
+    SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
+    chatReplyExecutor.execute(() -> chatReplyService.streamReplyForUserMessage(chatMessage, emitter));
+    return emitter;
   }
 
 }
