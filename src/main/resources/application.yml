@@ -10,13 +10,10 @@ spring:
     allow-bean-definition-overriding: true
   # The OpenAI starter (added in Phase 0 for Phase 1's OpenAI-compatible providers) bundles
   # autoconfiguration for chat, embedding, image, moderation, and audio models. All of them build
-  # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY -- and
-  # the chat one also collides with AnthropicChatAutoConfiguration since both are unconditionally
-  # active by default. None of them fit the multi-provider list shape in chatbot.providers anyway;
-  # ProviderRouter builds OpenAiChatModel/AnthropicChatModel instances programmatically per
-  # provider entry (com.mel.cb.provider) instead of relying on either starter's autoconfiguration
-  # -- Anthropic's is excluded here for the same reason: chatbot.anthropic is optional and
-  # non-default, so a default boot must not require ANTHROPIC_API_KEY to be set at all.
+  # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY. None of
+  # them fit the multi-provider list shape in chatbot.providers anyway; ProviderRouter builds
+  # OpenAiChatModel instances programmatically per provider entry (com.mel.cb.provider) instead of
+  # relying on the starter's autoconfiguration.
   autoconfigure:
     exclude:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
@@ -25,7 +22,6 @@ spring:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
-      - org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}
     username: ${DB_USER:chatbot}
@@ -83,9 +79,9 @@ chatbot:
   # (com.mel.cb.tools.ChatToolsRegistry), so the model decides when to call one mid-conversation.
   # weather/time need no key at all (Open-Meteo is free and keyless, used for geocoding too);
   # transit/web-search do, and follow the same optional/off-by-default-until-keyed convention as
-  # chatbot.anthropic below -- ToolsConfig resolves each api-key-env and the tool disables itself
-  # (left out of the model's tool list entirely) if it's not set, rather than being offered and
-  # failing when called.
+  # OpenAiCompatibleProvider below -- ToolsConfig resolves each api-key-env and the tool disables
+  # itself (left out of the model's tool list entirely) if it's not set, rather than being offered
+  # and failing when called.
   tools:
     geocoding-base-url: https://geocoding-api.open-meteo.com
     weather:
@@ -96,18 +92,11 @@ chatbot:
     transit:
       base-url: https://api.openrouteservice.org
       api-key-env: OPENROUTESERVICE_API_KEY
+    # Tavily (free tier: 1,000 requests/month), chosen over zero-key "instant answer" APIs since
+    # those only cover direct-answer lookups, not general web results. See WebSearchTools.
     web-search:
-      base-url: https://api.search.brave.com
-      api-key-env: BRAVE_SEARCH_API_KEY
-
-  # Optional, non-default paid fallback -- off by default so a default boot needs no Anthropic
-  # key at all. When enabled it's given the lowest priority (tried last, after every free-tier
-  # provider below is exhausted) via AnthropicChatProvider.
-  anthropic:
-    enabled: false
-    model: ${CHATBOT_MODEL:claude-sonnet-5}
-    api-key-env: ANTHROPIC_API_KEY
-    priority: 1000
+      base-url: https://api.tavily.com
+      api-key-env: TAVILY_API_KEY
 
   # Free-tier OpenAI-compatible providers, tried in priority order by ProviderRouter. Each
   # `limits` block is what QuotaTracker checks against (90% of either cap skips the provider for

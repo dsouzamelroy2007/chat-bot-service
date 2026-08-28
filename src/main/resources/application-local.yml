@@ -7,7 +7,6 @@ spring:
   # (including the OpenAI starter ones from application.yml) has to be repeated in full.
   autoconfigure:
     exclude:
-      - org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration

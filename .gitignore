@@ -28,3 +28,9 @@ replay_pid*
 
 # Build output
 target/
+
+# Local secrets -- never commit real API keys/credentials. .env.example (placeholders only) stays
+# tracked; anything else matching .env* (a real .env, .env.local, etc) does not.
+.env
+.env.*
+!.env.example

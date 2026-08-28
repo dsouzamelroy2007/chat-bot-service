@@ -1,7 +1,8 @@
 package com.mel.cb.tools;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,17 +25,17 @@ class WebSearchToolsTest {
   }
 
   private WebSearchTools webSearchTools(String apiKey) {
-    return new WebSearchTools(RestClient.builder().baseUrl(searchServer.baseUrl()).build(), apiKey, "BRAVE_SEARCH_API_KEY");
+    return new WebSearchTools(RestClient.builder().baseUrl(searchServer.baseUrl()).build(), apiKey, "TAVILY_API_KEY");
   }
 
   @Test
   void returnsFormattedTopResults() {
-    searchServer.stubFor(get(urlPathEqualTo("/res/v1/web/search"))
+    searchServer.stubFor(post(urlPathEqualTo("/search"))
         .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("""
-            {"web":{"results":[
-              {"title":"Result One","url":"https://example.com/1","description":"First result"},
-              {"title":"Result Two","url":"https://example.com/2","description":"Second result"}
-            ]}}
+            {"query":"spring ai","results":[
+              {"title":"Result One","url":"https://example.com/1","content":"First result"},
+              {"title":"Result Two","url":"https://example.com/2","content":"Second result"}
+            ]}
             """)));
 
     String result = webSearchTools("test-key").searchWeb("spring ai");
@@ -45,9 +46,20 @@ class WebSearchToolsTest {
   }
 
   @Test
+  void sendsApiKeyAndQueryInRequestBody() {
+    searchServer.stubFor(post(urlPathEqualTo("/search"))
+        .withRequestBody(equalToJson("{\"api_key\":\"test-key\",\"query\":\"spring ai\",\"max_results\":5}"))
+        .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{\"results\":[]}")));
+
+    webSearchTools("test-key").searchWeb("spring ai");
+
+    searchServer.verify(com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor(urlPathEqualTo("/search")));
+  }
+
+  @Test
   void returnsFriendlyMessageWhenNoResults() {
-    searchServer.stubFor(get(urlPathEqualTo("/res/v1/web/search"))
-        .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{\"web\":{\"results\":[]}}")));
+    searchServer.stubFor(post(urlPathEqualTo("/search"))
+        .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{\"results\":[]}")));
 
     String result = webSearchTools("test-key").searchWeb("asdkjhaksjdhaksjhd");
 

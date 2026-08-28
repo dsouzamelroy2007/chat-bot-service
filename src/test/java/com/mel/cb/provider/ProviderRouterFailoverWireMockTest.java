@@ -108,7 +108,7 @@ class ProviderRouterFailoverWireMockTest {
       configuredLimits.setTokensPerDay(limits.tokensPerDay());
       properties.setLimits(configuredLimits);
     }
-    return new OpenAiCompatibleProvider(properties, "test-key");
+    return new OpenAiCompatibleProvider(properties, "test-key", List.of());
   }
 
   @SuppressWarnings("unchecked")

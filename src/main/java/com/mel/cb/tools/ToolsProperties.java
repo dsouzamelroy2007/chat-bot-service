@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * {@code chatbot.tools.*}. Weather and time need no API key at all (Open-Meteo's APIs are free,
  * keyless, and shared for geocoding by every tool here); transit and web-search do, and follow the
- * same optional/self-disabling convention as {@code chatbot.anthropic} in
+ * same optional/self-disabling convention as {@code OpenAiCompatibleProvider} in
  * {@code com.mel.cb.provider} -- {@link ToolsConfig} resolves each {@code api-key-env} and the tool
  * disables itself (see {@link ChatTool#isEnabled()}) rather than being offered to the model unable
  * to actually do anything.
@@ -34,8 +34,8 @@ public class ToolsProperties {
 
   @Data
   public static class WebSearch {
-    private String baseUrl = "https://api.search.brave.com";
-    private String apiKeyEnv = "BRAVE_SEARCH_API_KEY";
+    private String baseUrl = "https://api.tavily.com";
+    private String apiKeyEnv = "TAVILY_API_KEY";
   }
 
 }

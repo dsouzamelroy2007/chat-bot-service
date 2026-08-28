@@ -1,44 +1,42 @@
 # chat-bot-service
 
-A Spring Boot microservice that gives AI-generated chat replies, backed by Claude (via Spring AI). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
+A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Cerebras, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
 
 ## Tech stack
 
 | Category | Technologies |
 |---|---|
-| Frameworks | Spring Boot 4.1 · Spring AI (Anthropic/Claude integration) · Resilience4j · springdoc-openapi |
+| Frameworks | Spring Boot 4.1 · Spring AI (multi-provider, free-tier-first) · Resilience4j · springdoc-openapi |
 | Testing | JUnit · Mockito |
 | Infrastructure | Docker · Maven |
 | Languages | Java 21 · Bash |
 
 ## Getting started
 
-**Prerequisites:** Maven, Java 21, Docker (for Postgres/Redis, see below), and (for real AI replies) an `ANTHROPIC_API_KEY`.
+**Prerequisites:** Maven, Java 21, Docker (for Postgres/Redis, see below).
 
-Set the key as an environment variable before starting the application — the service reads it via `spring.ai.anthropic.api-key` in `application.yml`. See [.env.example](.env.example) for every environment variable the app reads:
+For real (non-stubbed) replies, set at least one free-tier provider's API key as an environment variable before starting the application — see [.env.example](.env.example) for the full list, where to get each one for free, and every other environment variable the app reads:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export GEMINI_API_KEY=...
 ```
 
-Optionally set `CHATBOT_MODEL` to override the default model (`claude-sonnet-5`).
+With no key set at all, the app still boots and responds, just with a canned fallback reply instead of a real one (see [Live testing without an API key](#live-testing-without-an-api-key) below for a cost-free way to exercise the full request flow).
 
-> Note: an Anthropic API key is billed separately from a Claude Pro/Max subscription — it is not included.
-
-The default profile also requires Postgres and Redis to be reachable at boot (`spring-boot-starter-data-jpa`/`-data-redis` are on the classpath in preparation for conversation memory). The quickest way to get both locally is `docker-compose up -d postgres redis`. The cost-free `local` profile below needs neither.
+The default profile also requires Postgres and Redis to be reachable at boot (`spring-boot-starter-data-jpa`/`-data-redis` back conversation memory, see below). The quickest way to get both locally is `docker-compose up -d postgres redis`. The cost-free `local` profile below needs neither.
 
 ## Running the application
 
 **Option 1 — Docker Compose.** After cloning, from the project directory:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+cp .env.example .env   # fill in whichever keys you have
 sh start.sh
 ```
 
-This runs the test suite, builds a Docker image, and starts the full stack (app + Postgres + Redis) via `docker-compose`.
+This runs the test suite, builds a Docker image, and starts the full stack (app + Postgres + Redis) via `docker-compose`, which reads `.env` automatically.
 
-**Option 2 — From an IDE.** Start Postgres and Redis (`docker-compose up -d postgres redis`), import the project (Maven), build it, and set `ANTHROPIC_API_KEY` (and, if `5432`/`6379` are already taken locally, `DB_HOST_PORT`/`REDIS_HOST_PORT`) in the run configuration's environment variables before running `ChatBotService`.
+**Option 2 — From an IDE.** Start Postgres and Redis (`docker-compose up -d postgres redis`), import the project (Maven), build it, and set whichever provider key(s) you have (and, if `5432`/`6379` are already taken locally, `DB_HOST_PORT`/`REDIS_HOST_PORT`) in the run configuration's environment variables before running `ChatBotService`.
 
 Once running, the service listens on `http://localhost:8080/bot`.
 
@@ -62,7 +60,7 @@ Covers the controller, service, and utility layers (`src/test/java`).
 
 ### Live testing without an API key
 
-A `local` Spring profile is provided so you can exercise the full HTTP flow — validation, controller, service, circuit breaker — without an `ANTHROPIC_API_KEY` and without incurring any Claude API cost. It swaps in a stubbed `ChatModel` bean ([LocalChatModelConfig](src/main/java/com/mel/cb/config/LocalChatModelConfig.java)) that returns a canned reply instead of calling Anthropic.
+A `local` Spring profile is provided so you can exercise the full HTTP flow — validation, controller, service, circuit breaker — without any provider API key and without incurring any cost. It swaps in a stubbed [`StubChatProvider`](src/main/java/com/mel/cb/provider/StubChatProvider.java) that returns a canned reply instead of calling a real provider.
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=local
@@ -88,9 +86,9 @@ Expand `POST /chat/reply`, click **Try it out**, submit a payload, and hit **Exe
 
 ![Executed request against the stubbed /chat/reply endpoint, returning a 200 with a canned reply](docs/screenshots/swagger-chat-reply-example.png)
 
-### Live testing with real Claude replies
+### Live testing with real replies
 
-Run without the `local` profile (i.e. `mvn spring-boot:run`) with `ANTHROPIC_API_KEY` set, then hit the endpoint directly:
+Run without the `local` profile (i.e. `mvn spring-boot:run`) with at least one provider key set, then hit the endpoint directly:
 
 ```bash
 curl -X POST http://localhost:8080/bot/chat/reply \
@@ -104,11 +102,11 @@ or use Swagger UI at `http://localhost:8080/bot/swagger-ui.html` the same way as
 
 ### `POST /chat/reply`
 
-Receives a bot identifier and the user's message, sends the message to Claude (via Spring AI) along with a configurable system prompt (`chatbot.system-prompt`), and returns the model's generated reply.
+Receives a bot identifier and the user's message, sends the message to whichever configured LLM provider is next in priority (via Spring AI), along with a configurable system prompt (`chatbot.system-prompt`), and returns the model's generated reply.
 
 **Edge cases handled:**
 
-- If the call to Claude takes longer than 20 seconds, or fails repeatedly, a Resilience4j circuit breaker trips and a default reply is returned instead of hanging the request.
+- If the call to the LLM provider takes longer than 20 seconds, or every provider fails, a Resilience4j circuit breaker trips and a default reply is returned instead of hanging the request.
 - If the input payload has a missing bot identifier or message, a 400 client error is thrown from the endpoint.
 - All other exceptions are wrapped into user-friendly exceptions with appropriate messages.
 
@@ -131,7 +129,7 @@ The model can call a few tools mid-conversation when it decides one would help a
 | Current weather | No | [Open-Meteo](https://open-meteo.com) |
 | Current time in a place | No | Open-Meteo (geocoding) |
 | Travel directions (driving/cycling/walking — not live transit schedules) | Yes — `OPENROUTESERVICE_API_KEY` | [OpenRouteService](https://openrouteservice.org) free tier |
-| Web search | Yes — `BRAVE_SEARCH_API_KEY` | [Brave Search API](https://brave.com/search/api/) free tier |
+| Web search | Yes — `TAVILY_API_KEY` | [Tavily](https://tavily.com) free tier |
 
 Weather and time work out of the box. Directions and web search are off until their key is set — see [.env.example](.env.example) for where to get a free one.
 

@@ -18,7 +18,7 @@ import org.springframework.web.client.RestClient;
  * free tier has no real public-transit (bus/train schedule) routing -- only driving/cycling/walking
  * profiles -- so that's what this offers, best-effort, not live timetables. Optional: off (its
  * {@link #isEnabled()} returns false) unless an API key is configured, same convention as
- * {@code com.mel.cb.provider.AnthropicChatProvider}.
+ * {@code com.mel.cb.provider.OpenAiCompatibleProvider}.
  */
 @Slf4j
 public class TransitTools implements ChatTool {

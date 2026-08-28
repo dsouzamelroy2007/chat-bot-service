@@ -12,7 +12,9 @@ import org.springframework.web.client.RestClient;
  * inside the tool classes themselves -- same separation {@code com.mel.cb.provider.ProviderConfig}
  * uses for {@code OpenAiCompatibleProvider}, so a tool class stays a plain, directly-testable POJO
  * that just takes an already-resolved key (or {@code null}) rather than doing its own environment
- * lookups.
+ * lookups. Every tool here authenticates in its own request (a query param for OpenRouteService, a
+ * JSON body field for Tavily) rather than a shared header, so the {@link RestClient} built here
+ * carries no auth of its own.
  */
 @Configuration
 public class ToolsConfig {
@@ -21,12 +23,12 @@ public class ToolsConfig {
 
   @Bean
   public GeocodingClient geocodingClient(ToolsProperties properties) {
-    return new GeocodingClient(restClient(properties.getGeocodingBaseUrl(), null, null));
+    return new GeocodingClient(restClient(properties.getGeocodingBaseUrl()));
   }
 
   @Bean
   public WeatherTools weatherTools(GeocodingClient geocodingClient, ToolsProperties properties) {
-    return new WeatherTools(geocodingClient, restClient(properties.getWeather().getBaseUrl(), null, null));
+    return new WeatherTools(geocodingClient, restClient(properties.getWeather().getBaseUrl()));
   }
 
   @Bean
@@ -38,26 +40,25 @@ public class ToolsConfig {
   public TransitTools transitTools(GeocodingClient geocodingClient, ToolsProperties properties) {
     String apiKeyEnv = properties.getTransit().getApiKeyEnv();
     String apiKey = System.getenv(apiKeyEnv);
-    return new TransitTools(geocodingClient, restClient(properties.getTransit().getBaseUrl(), null, null), apiKey, apiKeyEnv);
+    return new TransitTools(geocodingClient, restClient(properties.getTransit().getBaseUrl()), apiKey, apiKeyEnv);
   }
 
   @Bean
   public WebSearchTools webSearchTools(ToolsProperties properties) {
     String apiKeyEnv = properties.getWebSearch().getApiKeyEnv();
     String apiKey = System.getenv(apiKeyEnv);
-    return new WebSearchTools(restClient(properties.getWebSearch().getBaseUrl(), "X-Subscription-Token", apiKey), apiKey, apiKeyEnv);
+    return new WebSearchTools(restClient(properties.getWebSearch().getBaseUrl()), apiKey, apiKeyEnv);
   }
 
-  private static RestClient restClient(String baseUrl, String authHeaderName, String authHeaderValue) {
+  private static RestClient restClient(String baseUrl) {
     SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
     requestFactory.setConnectTimeout(TIMEOUT);
     requestFactory.setReadTimeout(TIMEOUT);
-    RestClient.Builder builder = RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory);
-    if (authHeaderName != null && authHeaderValue != null && !authHeaderValue.isBlank()) {
-      builder.defaultHeader(authHeaderName, authHeaderValue);
-    }
-    builder.defaultHeader(HttpHeaders.ACCEPT, "application/json");
-    return builder.build();
+    return RestClient.builder()
+        .baseUrl(baseUrl)
+        .requestFactory(requestFactory)
+        .defaultHeader(HttpHeaders.ACCEPT, "application/json")
+        .build();
   }
 
 }

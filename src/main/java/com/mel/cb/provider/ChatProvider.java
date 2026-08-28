@@ -7,9 +7,8 @@ import reactor.core.publisher.Flux;
 
 /**
  * A single LLM backend the {@link ProviderRouter} can route a chat request to. Implementations
- * cover the free-tier OpenAI-compatible APIs ({@link OpenAiCompatibleProvider}), the optional
- * paid Anthropic fallback ({@link AnthropicChatProvider}), and the local no-key stub
- * ({@link StubChatProvider}).
+ * cover the free-tier OpenAI-compatible APIs ({@link OpenAiCompatibleProvider}) and the local
+ * no-key stub ({@link StubChatProvider}).
  */
 public interface ChatProvider {
 
