@@ -1,6 +1,7 @@
 package com.mel.cb.provider;
 
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.web.client.RestClient;
 import reactor.core.publisher.Flux;
 
@@ -25,9 +26,9 @@ public interface ChatProvider {
   /** Daily request/token caps for free-tier quota tracking, or {@code null} if untracked. */
   ProviderLimits getLimits();
 
-  ChatResponse reply(String systemPrompt, String userMessage);
+  ChatResponse reply(Prompt prompt);
 
-  Flux<ChatResponse> streamReply(String systemPrompt, String userMessage);
+  Flux<ChatResponse> streamReply(Prompt prompt);
 
   /** Startup reachability check; only {@link OpenAiCompatibleProvider} pings anything real. */
   default boolean checkHealth(RestClient restClient) {

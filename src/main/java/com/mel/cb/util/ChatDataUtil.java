@@ -34,9 +34,9 @@ public class ChatDataUtil {
 
   public static ChatReply getChatReplyFromText(String replyText) {
     if(replyText == null || replyText.isBlank()){
-      return new ChatReply(ChatConstants.NO_REPLY_AVAILABLE, Instant.now());
+      return new ChatReply(ChatConstants.NO_REPLY_AVAILABLE, Instant.now(), null);
     }
-    return new ChatReply(replyText, Instant.now());
+    return new ChatReply(replyText, Instant.now(), null);
   }
 
   public static String getObjectAsString(Object obj) {

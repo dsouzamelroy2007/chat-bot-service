@@ -3,6 +3,7 @@ package com.mel.cb.provider;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.http.HttpHeaders;
@@ -80,13 +81,13 @@ public class OpenAiCompatibleProvider implements ChatProvider {
   }
 
   @Override
-  public ChatResponse reply(String systemPrompt, String userMessage) {
-    return chatModel.call(ChatPrompts.of(systemPrompt, userMessage));
+  public ChatResponse reply(Prompt prompt) {
+    return chatModel.call(prompt);
   }
 
   @Override
-  public Flux<ChatResponse> streamReply(String systemPrompt, String userMessage) {
-    return chatModel.stream(ChatPrompts.of(systemPrompt, userMessage));
+  public Flux<ChatResponse> streamReply(Prompt prompt) {
+    return chatModel.stream(prompt);
   }
 
   @Override

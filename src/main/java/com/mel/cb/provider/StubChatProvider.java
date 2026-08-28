@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -45,13 +46,13 @@ public class StubChatProvider implements ChatProvider {
   }
 
   @Override
-  public ChatResponse reply(String systemPrompt, String userMessage) {
+  public ChatResponse reply(Prompt prompt) {
     return new ChatResponse(List.of(new Generation(new AssistantMessage(STUB_REPLY))));
   }
 
   @Override
-  public Flux<ChatResponse> streamReply(String systemPrompt, String userMessage) {
-    return Flux.just(reply(systemPrompt, userMessage));
+  public Flux<ChatResponse> streamReply(Prompt prompt) {
+    return Flux.just(reply(prompt));
   }
 
 }

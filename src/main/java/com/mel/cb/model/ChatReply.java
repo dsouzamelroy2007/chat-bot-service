@@ -21,4 +21,7 @@ public class ChatReply implements Serializable {
 
   private Instant timestamp;
 
+  /** Echoes (or, for a new conversation, assigns) the id to pass back in on the next turn. */
+  private String conversationId;
+
 }

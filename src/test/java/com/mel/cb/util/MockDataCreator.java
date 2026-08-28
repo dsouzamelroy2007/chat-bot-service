@@ -9,11 +9,11 @@ public class MockDataCreator {
     private static Instant timeStamp = Instant.now();
 
     public static ChatMessage getChatMessageForTest(){
-        return new ChatMessage("23432432243234", "Thank you");
+        return new ChatMessage("23432432243234", "user-123", "Thank you", null);
     }
 
     public static ChatReply getChatReplyForTest(){
-        return new ChatReply("See you soon!!", timeStamp);
+        return new ChatReply("See you soon!!", timeStamp, null);
     }
 
 }

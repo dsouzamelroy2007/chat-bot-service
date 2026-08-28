@@ -2,7 +2,7 @@ package com.mel.cb.provider;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +18,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +38,8 @@ class ProviderRouterTest {
 
   private ProviderRouter router;
 
+  private final Prompt prompt = ChatPrompts.of("sys", null, List.of(), "hi");
+
   @BeforeEach
   void setUp() {
     when(primary.getProviderId()).thenReturn("primary");
@@ -53,15 +56,15 @@ class ProviderRouterTest {
   void failsOverToNextProviderWhenFirstThrows() {
     when(primary.isEnabled()).thenReturn(true);
     when(secondary.isEnabled()).thenReturn(true);
-    when(primary.reply(anyString(), anyString())).thenThrow(new RuntimeException("simulated 429"));
+    when(primary.reply(any(Prompt.class))).thenThrow(new RuntimeException("simulated 429"));
     ChatResponse expected = chatResponse("from secondary");
-    when(secondary.reply(anyString(), anyString())).thenReturn(expected);
+    when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply("sys", "hi");
+    ChatResponse actual = router.getReply(prompt);
 
     assertSame(expected, actual);
-    verify(primary).reply("sys", "hi");
-    verify(secondary).reply("sys", "hi");
+    verify(primary).reply(prompt);
+    verify(secondary).reply(prompt);
   }
 
   @Test
@@ -69,12 +72,12 @@ class ProviderRouterTest {
     when(primary.isEnabled()).thenReturn(false);
     when(secondary.isEnabled()).thenReturn(true);
     ChatResponse expected = chatResponse("from secondary");
-    when(secondary.reply(anyString(), anyString())).thenReturn(expected);
+    when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply("sys", "hi");
+    ChatResponse actual = router.getReply(prompt);
 
     assertSame(expected, actual);
-    verify(primary, never()).reply(anyString(), anyString());
+    verify(primary, never()).reply(any(Prompt.class));
   }
 
   @Test
@@ -85,22 +88,22 @@ class ProviderRouterTest {
     when(quotaTracker.isOverQuota("primary", limits)).thenReturn(true);
     when(secondary.isEnabled()).thenReturn(true);
     ChatResponse expected = chatResponse("from secondary");
-    when(secondary.reply(anyString(), anyString())).thenReturn(expected);
+    when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply("sys", "hi");
+    ChatResponse actual = router.getReply(prompt);
 
     assertSame(expected, actual);
-    verify(primary, never()).reply(anyString(), anyString());
+    verify(primary, never()).reply(any(Prompt.class));
   }
 
   @Test
   void throwsProvidersExhaustedWhenEveryProviderFails() {
     when(primary.isEnabled()).thenReturn(true);
     when(secondary.isEnabled()).thenReturn(true);
-    when(primary.reply(anyString(), anyString())).thenThrow(new RuntimeException("boom1"));
-    when(secondary.reply(anyString(), anyString())).thenThrow(new RuntimeException("boom2"));
+    when(primary.reply(any(Prompt.class))).thenThrow(new RuntimeException("boom1"));
+    when(secondary.reply(any(Prompt.class))).thenThrow(new RuntimeException("boom2"));
 
-    assertThrows(ProvidersExhaustedException.class, () -> router.getReply("sys", "hi"));
+    assertThrows(ProvidersExhaustedException.class, () -> router.getReply(prompt));
   }
 
   @Test
@@ -109,9 +112,9 @@ class ProviderRouterTest {
     when(primary.isEnabled()).thenReturn(true);
     when(primary.getLimits()).thenReturn(limits);
     when(quotaTracker.isOverQuota("primary", limits)).thenReturn(false);
-    when(primary.reply(anyString(), anyString())).thenReturn(chatResponseWithUsage("ok", 42));
+    when(primary.reply(any(Prompt.class))).thenReturn(chatResponseWithUsage("ok", 42));
 
-    router.getReply("sys", "hi");
+    router.getReply(prompt);
 
     verify(quotaTracker).recordUsage("primary", 42L);
   }

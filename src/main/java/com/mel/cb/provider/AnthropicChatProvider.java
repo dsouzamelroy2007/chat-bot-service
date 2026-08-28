@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
@@ -78,13 +79,13 @@ public class AnthropicChatProvider implements ChatProvider {
   }
 
   @Override
-  public ChatResponse reply(String systemPrompt, String userMessage) {
-    return chatModel.call(ChatPrompts.of(systemPrompt, userMessage));
+  public ChatResponse reply(Prompt prompt) {
+    return chatModel.call(prompt);
   }
 
   @Override
-  public Flux<ChatResponse> streamReply(String systemPrompt, String userMessage) {
-    return chatModel.stream(ChatPrompts.of(systemPrompt, userMessage));
+  public Flux<ChatResponse> streamReply(Prompt prompt) {
+    return chatModel.stream(prompt);
   }
 
 }

@@ -68,6 +68,7 @@ public class ChatReplyController {
 
   public CompletableFuture<ResponseEntity<ChatReply>> fallback_replyToUser_AI_API_TIMEOUT(ChatMessage chatMessage, Throwable throwable){
     ChatReply chatReply = ChatDataUtil.getChatReplyFromText(null);
+    chatReply.setConversationId(chatMessage.getConversationId());
     return CompletableFuture.completedFuture(new ResponseEntity<>(chatReply, HttpStatus.BAD_GATEWAY));
   }
 

@@ -81,6 +81,7 @@ Expand `POST /chat/reply`, click **Try it out**, submit a payload, and hit **Exe
 ```json
 {
   "botId": "support-bot",
+  "userId": "user-123",
   "message": "Hello, what are your hours?"
 }
 ```
@@ -94,7 +95,7 @@ Run without the `local` profile (i.e. `mvn spring-boot:run`) with `ANTHROPIC_API
 ```bash
 curl -X POST http://localhost:8080/bot/chat/reply \
   -H "Content-Type: application/json" \
-  -d '{"botId": "support-bot", "message": "Hello, what are your hours?"}'
+  -d '{"botId": "support-bot", "userId": "user-123", "message": "Hello, what are your hours?"}'
 ```
 
 or use Swagger UI at `http://localhost:8080/bot/swagger-ui.html` the same way as above.
@@ -118,6 +119,5 @@ Receives a bot identifier and the user's message, sends the message to Claude (v
 
 ## Further improvements
 
-- Multi-turn conversation memory (currently every request is stateless/single-turn).
 - Application monitoring for response time and performance across all endpoints.
 - Richer structured logging (currently logs a simple per-request response time).

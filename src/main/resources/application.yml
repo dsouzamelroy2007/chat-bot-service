@@ -65,6 +65,20 @@ resilience4j:
 chatbot:
   system-prompt: You are a helpful, friendly customer support chat bot. Keep replies concise.
 
+  # Conversation memory (Phase 2, docs/PLAN.md): per-conversation history/summary live in Redis
+  # with a sliding TTL (refreshed on every turn) approximating a single chat session; user-facts
+  # extracted from evicted turns are persisted to Postgres and outlive the session. session-ttl
+  # takes Spring's simple duration shorthand (e.g. 6h, 8h, 10h) -- 8h is the midpoint of the 6-10h
+  # session window this was scoped to. user-token-budget is a per-user total, split evenly across
+  # however many of that user's conversations are currently active (see ConversationMemoryService);
+  # eviction-threshold mirrors QuotaTracker's 90%-of-cap convention. Token counts here are a cheap
+  # char-based estimate for budgeting, not a real tokenizer -- see RedisConversationMemoryStore.
+  memory:
+    session-ttl: 8h
+    user-token-budget: 10000
+    eviction-threshold: 0.9
+    min-raw-turns-kept: 4
+
   # Optional, non-default paid fallback -- off by default so a default boot needs no Anthropic
   # key at all. When enabled it's given the lowest priority (tried last, after every free-tier
   # provider below is exhausted) via AnthropicChatProvider.

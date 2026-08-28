@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,7 @@ public class ProviderRouter {
     }
   }
 
-  public ChatResponse getReply(String systemPrompt, String userMessage) {
+  public ChatResponse getReply(Prompt prompt) {
     for (ChatProvider provider : registry.all()) {
       String id = provider.getProviderId();
       if (!provider.isEnabled()) {
@@ -70,7 +71,7 @@ public class ProviderRouter {
       }
       long start = System.nanoTime();
       try {
-        ChatResponse response = provider.reply(systemPrompt, userMessage);
+        ChatResponse response = provider.reply(prompt);
         circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         recordUsage(provider, response);
         return response;

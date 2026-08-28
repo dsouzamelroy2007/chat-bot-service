@@ -96,6 +96,17 @@
       <artifactId>flyway-database-postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <!-- Phase 0 added the two flyway-* libraries above but not this: in Boot 4.1's split
+         autoconfigure modules, FlywayAutoConfiguration itself lives here, not bundled with
+         flyway-core the way it was in the old monolithic spring-boot-autoconfigure jar. Without
+         it Flyway silently never runs at boot: no error, no migration, since nothing on the
+         classpath ever registers the autoconfiguration class. Went unnoticed through Phase 0/1
+         since neither phase had an actual migration to run; caught during Phase 2 verification
+         when V1__create_user_facts.sql never applied against a real Postgres. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-flyway</artifactId>
+    </dependency>
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
