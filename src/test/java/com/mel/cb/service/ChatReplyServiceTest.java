@@ -14,6 +14,7 @@ import com.mel.cb.model.ChatMessage;
 import com.mel.cb.model.ChatReply;
 import com.mel.cb.provider.ProviderRouter;
 import com.mel.cb.provider.ProvidersExhaustedException;
+import com.mel.cb.tools.ChatToolsRegistry;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ public class ChatReplyServiceTest {
   @Mock
   private ConversationMemoryService memoryService;
 
+  @Mock
+  private ChatToolsRegistry toolsRegistry;
+
   private ChatReply chatReply;
 
   private ChatMessage chatMessage;
@@ -47,12 +51,13 @@ public class ChatReplyServiceTest {
 
   @BeforeEach
   public void setUp(){
-    chatReplyService = new ChatReplyService(providerRouter, memoryService);
+    chatReplyService = new ChatReplyService(providerRouter, memoryService, toolsRegistry);
     ReflectionTestUtils.setField(chatReplyService, "systemPrompt", SYSTEM_PROMPT);
 
     chatReply = getChatReplyForTest();
     chatMessage = getChatMessageForTest();
     when(memoryService.loadContext(anyString())).thenReturn(ConversationContext.empty());
+    when(toolsRegistry.getToolCallbacks()).thenReturn(List.of());
   }
 
   @Test

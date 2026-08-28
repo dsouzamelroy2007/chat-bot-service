@@ -116,6 +116,24 @@ Receives a bot identifier and the user's message, sends the message to Claude (v
 
 - `reply` — the chat reply text. Falls back to a default message if the AI call fails or the circuit breaker trips.
 - `timestamp` — ISO 8601 format with fractional seconds, human-readable and chronologically sortable.
+- `conversationId` — identifies the conversation for follow-up turns. Echoed back if the request included one, otherwise a new id is minted and returned here — pass it back on the next request to continue the same conversation (see [Conversation memory](#conversation-memory)).
+
+## Conversation memory
+
+Each conversation's recent turns and a rolling summary of older ones are kept in Redis for the length of a session (~8 hours of activity); the model sees them as real context on every reply, not just the latest message. Token usage is budgeted per user, split evenly across however many conversations that user currently has active — once a conversation nears its share, its oldest turns are summarised away to make room, and any durable facts spotted about the user (preferences, name, etc.) are saved to Postgres so they persist across sessions.
+
+## Tools
+
+The model can call a few tools mid-conversation when it decides one would help answer the user's question:
+
+| Tool | Needs a key? | Powered by |
+|---|---|---|
+| Current weather | No | [Open-Meteo](https://open-meteo.com) |
+| Current time in a place | No | Open-Meteo (geocoding) |
+| Travel directions (driving/cycling/walking — not live transit schedules) | Yes — `OPENROUTESERVICE_API_KEY` | [OpenRouteService](https://openrouteservice.org) free tier |
+| Web search | Yes — `BRAVE_SEARCH_API_KEY` | [Brave Search API](https://brave.com/search/api/) free tier |
+
+Weather and time work out of the box. Directions and web search are off until their key is set — see [.env.example](.env.example) for where to get a free one.
 
 ## Further improvements
 

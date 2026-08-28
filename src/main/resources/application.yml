@@ -79,6 +79,27 @@ chatbot:
     eviction-threshold: 0.9
     min-raw-turns-kept: 4
 
+  # Tools (Phase 3, docs/PLAN.md): exposed to the model via Spring AI function-calling
+  # (com.mel.cb.tools.ChatToolsRegistry), so the model decides when to call one mid-conversation.
+  # weather/time need no key at all (Open-Meteo is free and keyless, used for geocoding too);
+  # transit/web-search do, and follow the same optional/off-by-default-until-keyed convention as
+  # chatbot.anthropic below -- ToolsConfig resolves each api-key-env and the tool disables itself
+  # (left out of the model's tool list entirely) if it's not set, rather than being offered and
+  # failing when called.
+  tools:
+    geocoding-base-url: https://geocoding-api.open-meteo.com
+    weather:
+      base-url: https://api.open-meteo.com
+    # "transit" is deliberately scoped to driving/cycling/walking directions, not real public-transit
+    # schedules -- OpenRouteService's free tier (2,000 requests/day) doesn't offer transit routing,
+    # and no free, global, keyless alternative for that exists. See TransitTools.
+    transit:
+      base-url: https://api.openrouteservice.org
+      api-key-env: OPENROUTESERVICE_API_KEY
+    web-search:
+      base-url: https://api.search.brave.com
+      api-key-env: BRAVE_SEARCH_API_KEY
+
   # Optional, non-default paid fallback -- off by default so a default boot needs no Anthropic
   # key at all. When enabled it's given the lowest priority (tried last, after every free-tier
   # provider below is exhausted) via AnthropicChatProvider.

@@ -2,6 +2,7 @@ package com.mel.cb;
 
 import com.mel.cb.memory.ConversationMemoryProperties;
 import com.mel.cb.provider.ChatbotProviderProperties;
+import com.mel.cb.tools.ToolsProperties;
 import jakarta.annotation.PostConstruct;
 import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
@@ -14,7 +15,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @SpringBootApplication
 @EnableAsync
-@EnableConfigurationProperties({ChatbotProviderProperties.class, ConversationMemoryProperties.class})
+@EnableConfigurationProperties({ChatbotProviderProperties.class, ConversationMemoryProperties.class, ToolsProperties.class})
 public class ChatBotService {
 
   public static void main(String[] args) {

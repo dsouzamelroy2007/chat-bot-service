@@ -8,6 +8,7 @@ import com.mel.cb.model.ChatMessage;
 import com.mel.cb.model.ChatReply;
 import com.mel.cb.provider.ChatPrompts;
 import com.mel.cb.provider.ProviderRouter;
+import com.mel.cb.tools.ChatToolsRegistry;
 import com.mel.cb.util.ChatDataUtil;
 import java.util.List;
 import java.util.UUID;
@@ -25,13 +26,16 @@ public class ChatReplyService {
 
   private final ProviderRouter providerRouter;
   private final ConversationMemoryService memoryService;
+  private final ChatToolsRegistry toolsRegistry;
 
   @Value("${chatbot.system-prompt}")
   private String systemPrompt;
 
-  public ChatReplyService(ProviderRouter providerRouter, ConversationMemoryService memoryService) {
+  public ChatReplyService(ProviderRouter providerRouter, ConversationMemoryService memoryService,
+      ChatToolsRegistry toolsRegistry) {
     this.providerRouter = providerRouter;
     this.memoryService = memoryService;
+    this.toolsRegistry = toolsRegistry;
   }
 
   public ChatReply getReplyForUserMessage(ChatMessage chatMessage){
@@ -39,7 +43,8 @@ public class ChatReplyService {
     try {
       ConversationContext context = memoryService.loadContext(conversationId);
       List<Message> history = context.turns().stream().map(ConversationTurn::toMessage).toList();
-      Prompt prompt = ChatPrompts.of(systemPrompt, context.summary(), history, chatMessage.getMessage());
+      Prompt prompt = ChatPrompts.of(systemPrompt, context.summary(), history, chatMessage.getMessage(),
+          toolsRegistry.getToolCallbacks());
 
       ChatResponse response = providerRouter.getReply(prompt);
       String replyText = response.getResult() != null ? response.getResult().getOutput().getText() : null;
