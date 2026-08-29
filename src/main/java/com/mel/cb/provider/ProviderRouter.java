@@ -21,7 +21,9 @@ import reactor.core.publisher.Flux;
  * daily quota, circuit-open, or rate-limited, and failing over to the next on any exception from
  * the call itself (429/5xx/timeout are the expected cases, but any other transport failure is
  * treated the same way -- there's no reason to give up on the whole request just because a
- * failure doesn't match one specific status code). Throws {@link ProvidersExhaustedException}
+ * failure doesn't match one specific status code) -- {@link #getReply} additionally fails over on
+ * a response that threw nothing but came back with no usable text at all (see its own doc for the
+ * concrete provider quirk this was added for, Phase 6, docs/PLAN.md). Throws {@link ProvidersExhaustedException}
  * once every provider has been tried or skipped; callers let that -- like any other exception --
  * escape to the outer, request-level circuit breaker in ChatReplyController, which is what
  * actually produces the canned fallback reply (see docs/PLAN.md conflict #1).
@@ -73,8 +75,25 @@ public class ProviderRouter {
       long start = System.nanoTime();
       try {
         ChatResponse response = provider.reply(prompt);
-        circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+        long elapsedMs = Duration.ofNanos(System.nanoTime() - start).toMillis();
         recordUsage(provider, response);
+        if (isBlankReply(response)) {
+          // The provider genuinely consumed quota/tokens (recorded above) and threw nothing, but
+          // returned unusable output -- e.g. Gemini's OpenAI-compatible endpoint 400ing on the
+          // tool-result follow-up call for lacking a Gemini-specific `thought_signature` that
+          // Spring AI's generic tool-calling loop doesn't know to echo back, discovered live
+          // during Phase 6 deployment testing (docs/PLAN.md). Treated the same as a thrown
+          // exception for failover purposes: a 200 with nothing useful in it is not meaningfully
+          // different from a failure from the caller's perspective, and gating failover on
+          // exceptions alone left this kind of silent, provider-specific quirk with no way to
+          // ever reach the next provider.
+          circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS,
+              new IllegalStateException("Provider " + id + " returned an empty reply"));
+          log.warn("Provider {} returned an empty reply after {} ms, trying next provider", id, elapsedMs);
+          continue;
+        }
+        circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+        log.info("Provider {} responded in {} ms", id, elapsedMs);
         return response;
       } catch (Exception e) {
         circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
@@ -82,6 +101,21 @@ public class ProviderRouter {
       }
     }
     throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
+  }
+
+  /**
+   * A provider can return a normal, exception-free {@link ChatResponse} that still has nothing
+   * usable in it (see the {@link #getReply} call site for the concrete case this was written for).
+   * Mirrors {@code ChatReplyService.extractText}'s null-safety rather than sharing it directly --
+   * that method is private to a different package and this needs only a yes/no check, not the
+   * extracted text itself.
+   */
+  private static boolean isBlankReply(ChatResponse response) {
+    if (response.getResult() == null) {
+      return true;
+    }
+    String text = response.getResult().getOutput().getText();
+    return text == null || text.isBlank();
   }
 
   /**
@@ -96,6 +130,12 @@ public class ProviderRouter {
    * recorded to {@link QuotaTracker} as a request only (0 tokens) -- enough for the request-count-
    * metered free tiers (e.g. OpenRouter) to still see streaming traffic, without pretending to know
    * an exact token count.
+   * <p>
+   * Does <b>not</b> get {@link #getReply}'s empty-reply failover (Phase 6, docs/PLAN.md) -- doing so
+   * would mean buffering an unknown number of chunks before deciding the whole stream was empty and
+   * only then trying the next provider, which conflicts with actually streaming as chunks arrive.
+   * A provider with the same quirk that caused that fix would show up here as a stream that opens
+   * and then emits nothing, rather than a clean fallback.
    */
   public Flux<ChatResponse> streamReply(Prompt prompt) {
     for (ChatProvider provider : registry.all()) {

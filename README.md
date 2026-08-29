@@ -1,6 +1,6 @@
 # chat-bot-service
 
-A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Cerebras, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. It remembers a conversation (Redis + Postgres), can call a handful of tools mid-reply (weather, time, directions, web search), streams replies token-by-token over SSE, and is hardened for public exposure (rate limiting, request limits, optional API-key auth). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
+A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. It remembers a conversation (Redis + Postgres), can call a handful of tools mid-reply (weather, time, directions, web search), streams replies token-by-token over SSE, and is hardened for public exposure (rate limiting, request limits, optional API-key auth). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
 
 **Contents:** [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Running the application](#running-the-application) · [Chat widget](#chat-widget) · [Testing](#testing) · [API](#api) · [Security](#security) · [Conversation memory](#conversation-memory) · [Tools](#tools) · [Deployment](#deployment) · [Further improvements](#further-improvements)
 
@@ -111,7 +111,7 @@ Receives a bot identifier and the user's message, sends the message to whichever
 
 **Edge cases handled:**
 
-- If the call to the LLM provider takes longer than 20 seconds, or every provider fails, a Resilience4j circuit breaker trips and a default reply is returned instead of hanging the request.
+- If the call to the LLM provider takes longer than 60 seconds, or every provider fails, a Resilience4j circuit breaker trips and a default reply is returned instead of hanging the request. 60s accommodates a full tool-calling round trip (initial call + tool execution + follow-up call), which can legitimately take that long on some free-tier providers.
 - If the input payload has a missing/blank bot identifier, user id, or message, or the message exceeds 4000 characters, a 400 client error is thrown from the endpoint.
 - All other exceptions are wrapped into user-friendly exceptions with appropriate messages.
 
@@ -129,7 +129,7 @@ Same request body as `/chat/reply`, but streams the reply via Server-Sent Events
 - Each following (default-named) event: one text chunk to append to the reply so far.
 - On failure, a final event named `error` with a user-facing message, then the stream closes normally.
 
-Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (see `docs/PLAN.md` Phase 4 notes for why). There's also no 20s circuit-breaker timeout on this endpoint, since a streamed reply can legitimately take longer than that to finish.
+Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (see `docs/PLAN.md` Phase 4 notes for why). There's also no circuit-breaker timeout on this endpoint the way `/chat/reply` has (see above), since a streamed reply can legitimately take longer to finish; it does have its own, longer-lived 60s connection timeout at the transport level.
 
 ## Security
 

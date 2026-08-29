@@ -99,6 +99,46 @@ class ProviderRouterTest {
   }
 
   @Test
+  void failsOverToNextProviderWhenFirstReturnsBlankReply() {
+    when(primary.isEnabled()).thenReturn(true);
+    when(secondary.isEnabled()).thenReturn(true);
+    when(primary.reply(any(Prompt.class))).thenReturn(chatResponse(""));
+    ChatResponse expected = chatResponse("from secondary");
+    when(secondary.reply(any(Prompt.class))).thenReturn(expected);
+
+    ChatResponse actual = router.getReply(prompt);
+
+    assertSame(expected, actual);
+    verify(primary).reply(prompt);
+    verify(secondary).reply(prompt);
+  }
+
+  @Test
+  void recordsUsageForAProviderThatReturnedABlankReply() {
+    ProviderLimits limits = new ProviderLimits(100, 1000);
+    when(primary.isEnabled()).thenReturn(true);
+    when(primary.getLimits()).thenReturn(limits);
+    when(quotaTracker.isOverQuota("primary", limits)).thenReturn(false);
+    when(primary.reply(any(Prompt.class))).thenReturn(chatResponseWithUsage("", 17));
+    when(secondary.isEnabled()).thenReturn(true);
+    when(secondary.reply(any(Prompt.class))).thenReturn(chatResponse("from secondary"));
+
+    router.getReply(prompt);
+
+    verify(quotaTracker).recordUsage("primary", 17L);
+  }
+
+  @Test
+  void throwsProvidersExhaustedWhenEveryProviderReturnsBlankReplies() {
+    when(primary.isEnabled()).thenReturn(true);
+    when(secondary.isEnabled()).thenReturn(true);
+    when(primary.reply(any(Prompt.class))).thenReturn(chatResponse(""));
+    when(secondary.reply(any(Prompt.class))).thenReturn(new ChatResponse(List.of()));
+
+    assertThrows(ProvidersExhaustedException.class, () -> router.getReply(prompt));
+  }
+
+  @Test
   void throwsProvidersExhaustedWhenEveryProviderFails() {
     when(primary.isEnabled()).thenReturn(true);
     when(secondary.isEnabled()).thenReturn(true);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mel.cb.tools.GeocodingClient.GeocodeResult;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.web.client.RestClient;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
  * configure. Response schema (the {@code current.*} fields) confirmed against the live API on
  * 2026-08-28, not assumed.
  */
+@Slf4j
 public class WeatherTools implements ChatTool {
 
   private static final Map<Integer, String> WEATHER_CODE_DESCRIPTIONS = Map.ofEntries(
@@ -44,12 +46,15 @@ public class WeatherTools implements ChatTool {
   @Tool(description = "Get the current weather conditions for a place name (city, region, or landmark).")
   public String getCurrentWeather(
       @ToolParam(description = "Place name, e.g. 'Paris' or 'Paris, France'") String location) {
+    long start = System.currentTimeMillis();
     Optional<GeocodeResult> place = geocodingClient.geocode(location);
+    log.debug("Geocoding \"{}\" took {} ms", location, System.currentTimeMillis() - start);
     if (place.isEmpty()) {
       return "Could not find a location matching \"" + location + "\".";
     }
     GeocodeResult g = place.get();
 
+    long forecastStart = System.currentTimeMillis();
     ForecastResponse forecast = restClient.get()
         .uri(uriBuilder -> uriBuilder.path("/v1/forecast")
             .queryParam("latitude", g.latitude())
@@ -59,6 +64,7 @@ public class WeatherTools implements ChatTool {
             .build())
         .retrieve()
         .body(ForecastResponse.class);
+    log.debug("Forecast lookup for {} took {} ms", g.name(), System.currentTimeMillis() - forecastStart);
     if (forecast == null || forecast.current() == null) {
       return "Weather data is currently unavailable for " + g.name() + ".";
     }

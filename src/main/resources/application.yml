@@ -10,6 +10,14 @@ spring:
     name: chat-bot-service
   main:
     allow-bean-definition-overriding: true
+  mvc:
+    async:
+      # Tomcat's own async-dispatch default (30s) is shorter than resilience4j's chatReply
+      # TimeLimiter below -- found live (Phase 6, docs/PLAN.md) when raising that timeout to 60s
+      # still produced a generic 503 at ~30s instead of the intended fallback reply: the container's
+      # own async timeout was firing first and never reaching resilience4j's handling at all. Kept
+      # in sync with (at least as long as) resilience4j.timelimiter.instances.chatReply below.
+      request-timeout: 65s
   # The OpenAI starter (added in Phase 0 for Phase 1's OpenAI-compatible providers) bundles
   # autoconfiguration for chat, embedding, image, moderation, and audio models. All of them build
   # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY. None of
@@ -78,7 +86,13 @@ resilience4j:
   timelimiter:
     instances:
       chatReply:
-        timeout-duration: 20s
+        # Raised from 20s to 60s (Phase 6, docs/PLAN.md) after live tool-calling tests showed a
+        # single provider's full tool round trip (initial call + tool execution + follow-up call)
+        # can legitimately take 38-83s on Gemini's free tier -- confirmed via timing instrumentation
+        # that the delay is the provider's own response time (tool execution itself is under
+        # 250ms), not a bug in this app. 60s doesn't guarantee covering the worst observed case, but
+        # comfortably covers the common one; a genuinely hung request still doesn't wait forever.
+        timeout-duration: 60s
   circuitbreaker:
     instances:
       chatReply:
@@ -154,7 +168,13 @@ chatbot:
   providers:
     - id: gemini
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
-      model: gemini-2.5-flash
+      # gemini-2.5-flash (the model configured through Phase 3-5) started 404ing "no longer
+      # available to new users" as of live testing on 2026-08-29 -- gemini-flash-latest is an
+      # alias Google documents as always pointing at a current flash-tier model, chosen specifically
+      # to avoid pinning to a fixed version that goes stale again the same way. Confirmed live
+      # (real completions call, and a real tool-call request returning a correct tool_calls
+      # response) against the actual API, not assumed from the model name.
+      model: gemini-flash-latest
       api-key-env: GEMINI_API_KEY
       priority: 1
       limits:
@@ -163,9 +183,15 @@ chatbot:
         # verified-on: 2026-08-28 -- Google AI Studio free tier, gemini-2.5-flash: 10 RPM / 250
         # RPD / 250K TPM per official docs. No published per-day token cap; tokens-per-day here
         # is a generous non-binding safety ceiling -- requests-per-day is the real constraint.
+        # Not re-verified for gemini-flash-latest specifically on 2026-08-29 -- kept as the same
+        # conservative flash-tier figures pending a closer look.
     - id: groq
       base-url: https://api.groq.com/openai/v1
-      model: llama-3.3-70b-versatile
+      # llama-3.3-70b-versatile 404'd ("does not exist or you do not have access to it") as of live
+      # testing on 2026-08-29 -- no longer listed at all via Groq's own /models endpoint. Replaced
+      # with openai/gpt-oss-20b (OpenAI's open-weight model, hosted free on Groq), confirmed live
+      # for both plain completions and tool-calling against the real API.
+      model: openai/gpt-oss-20b
       api-key-env: GROQ_API_KEY
       priority: 2
       limits:
@@ -174,23 +200,18 @@ chatbot:
         # verified-on: 2026-08-28 -- Groq free tier, llama-3.3-70b-versatile: 30 RPM / 14,400 RPD.
         # Per-model TPM is reported as 6K-20K depending on model; ~100K tokens/day is the commonly
         # cited practical ceiling for steady use of this model -- treat as approximate.
-    - id: cerebras
-      base-url: https://api.cerebras.ai/v1
-      model: llama-3.3-70b
-      api-key-env: CEREBRAS_API_KEY
-      priority: 3
-      limits:
-        requests-per-day: 7200
-        tokens-per-day: 1000000
-        # verified-on: 2026-08-28 -- Cerebras free tier: 1M tokens/day is consistently documented
-        # across official and third-party sources. RPM is reported inconsistently (5-30 RPM
-        # depending on source/model), so requests-per-day is a conservative derived estimate
-        # (5 RPM x 1440 min), not an official daily figure.
+        # Not re-verified for openai/gpt-oss-20b specifically on 2026-08-29 -- kept as the same
+        # conservative figures pending a closer look.
+    # Cerebras removed (Phase 6, docs/PLAN.md) -- its genuinely-free (no payment method) tier ended
+    # 2026-08-17; every model on the account returns 402 Payment required as of live testing on
+    # 2026-08-29, confirmed against a freshly-created account too, so this isn't fixable by rotating
+    # keys or model ids. Re-add if Cerebras is ever re-enabled with a payment method on file --
+    # nothing else in this file depends on it being present.
     - id: mistral
       base-url: https://api.mistral.ai/v1
       model: mistral-small-latest
       api-key-env: MISTRAL_API_KEY
-      priority: 4
+      priority: 3
       limits:
         requests-per-day: 500
         tokens-per-day: 33000000
@@ -200,9 +221,14 @@ chatbot:
         # adjust before relying on this in production.
     - id: openrouter
       base-url: https://openrouter.ai/api/v1
-      model: "deepseek/deepseek-chat-v3.1:free"
+      # deepseek/deepseek-chat-v3.1:free no longer exists in OpenRouter's model list as of live
+      # testing on 2026-08-29 (confirmed via OpenRouter's own /models endpoint, not assumed).
+      # Replaced with nvidia/nemotron-3-super-120b-a12b:free -- confirmed live for plain
+      # completions and, importantly, for tool-calling (returned a correct tool_calls response
+      # with cost:0 in the usage block, confirming it's genuinely on OpenRouter's free tier).
+      model: "nvidia/nemotron-3-super-120b-a12b:free"
       api-key-env: OPENROUTER_API_KEY
-      priority: 5
+      priority: 4
       limits:
         requests-per-day: 50
         tokens-per-day: 100000000

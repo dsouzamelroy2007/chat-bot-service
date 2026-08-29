@@ -3,6 +3,7 @@ package com.mel.cb.provider;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -29,6 +30,21 @@ import reactor.core.publisher.Flux;
  * options object built by a caller with no idea of this provider's own model/baseUrl/apiKey would
  * silently discard them all rather than merge, breaking the request -- see docs/PLAN.md for the
  * real (live-tested, not {@code javap}-assumed) failure this replaced.
+ * <p>
+ * Calls go through a {@link ChatClient} wrapping the {@link OpenAiChatModel}, not the model
+ * directly -- a second real (live-tested) surprise, found during Phase 6 deployment testing
+ * (docs/PLAN.md): {@code OpenAiChatModel.call(Prompt)}/{@code stream(Prompt)} build the request and
+ * hand back whatever the API returns, including a bare {@code tool_calls} response with no text,
+ * with no loop of their own -- confirmed by decompiling the resolved 2.0.0 jar and finding no
+ * {@code executeToolCalls} call anywhere in the class. The automatic "call the tool, feed the
+ * result back, get a real answer" loop this project's earlier phases assumed came from the model
+ * itself is actually a {@code ChatClient} advisor ({@code ToolCallingAdvisor}, registered by
+ * default by {@code ChatClient.builder(ChatModel)} with no extra configuration needed) -- going
+ * through a model directly, as every phase through Phase 5 did, silently skips it. Tool callbacks
+ * stay baked into the model's own default {@link OpenAiChatOptions} as before; the {@code Prompt}
+ * passed to {@code ChatClient.prompt(Prompt)} still carries no options of its own
+ * ({@code ChatPrompts.of} never sets any), so the same {@code prompt.getOptions() == null} fallback
+ * the earlier {@code ClassCastException} fix relies on is unaffected by this change.
  */
 @Slf4j
 public class OpenAiCompatibleProvider implements ChatProvider {
@@ -38,7 +54,7 @@ public class OpenAiCompatibleProvider implements ChatProvider {
   private final String baseUrl;
   private final String apiKey;
   private final ProviderLimits limits;
-  private final OpenAiChatModel chatModel;
+  private final ChatClient chatClient;
   private final AtomicBoolean enabled = new AtomicBoolean(true);
 
   public OpenAiCompatibleProvider(ProviderProperties properties, String apiKey, List<ToolCallback> toolCallbacks) {
@@ -49,7 +65,7 @@ public class OpenAiCompatibleProvider implements ChatProvider {
     this.limits = properties.getLimits() != null
         ? new ProviderLimits(properties.getLimits().getRequestsPerDay(), properties.getLimits().getTokensPerDay())
         : null;
-    this.chatModel = OpenAiChatModel.builder()
+    OpenAiChatModel chatModel = OpenAiChatModel.builder()
         .options(OpenAiChatOptions.builder()
             .baseUrl(this.baseUrl)
             .apiKey(this.apiKey)
@@ -61,6 +77,7 @@ public class OpenAiCompatibleProvider implements ChatProvider {
             .toolCallbacks(toolCallbacks != null ? toolCallbacks : List.of())
             .build())
         .build();
+    this.chatClient = ChatClient.builder(chatModel).build();
     if (this.apiKey.isBlank()) {
       disable("no API key configured (env var " + properties.getApiKeyEnv() + " not set)");
     }
@@ -95,12 +112,12 @@ public class OpenAiCompatibleProvider implements ChatProvider {
 
   @Override
   public ChatResponse reply(Prompt prompt) {
-    return chatModel.call(prompt);
+    return chatClient.prompt(prompt).call().chatResponse();
   }
 
   @Override
   public Flux<ChatResponse> streamReply(Prompt prompt) {
-    return chatModel.stream(prompt);
+    return chatClient.prompt(prompt).stream().chatResponse();
   }
 
   @Override
