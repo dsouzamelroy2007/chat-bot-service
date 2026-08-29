@@ -199,6 +199,34 @@ class ProviderRouterTest {
   }
 
   @Test
+  void streamFailsOverToNextProviderWhenFirstErrorsBeforeEmittingAnything() {
+    when(primary.isEnabled()).thenReturn(true);
+    when(secondary.isEnabled()).thenReturn(true);
+    RuntimeException failure = new RuntimeException("simulated connect timeout");
+    when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.error(failure));
+    ChatResponse chunk = chatResponse("from secondary");
+    when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
+
+    Flux<ChatResponse> result = router.streamReply(prompt);
+
+    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    verify(primary).streamReply(prompt);
+    verify(secondary).streamReply(prompt);
+  }
+
+  @Test
+  void streamThrowsProvidersExhaustedWhenEveryProviderErrorsBeforeEmittingAnything() {
+    when(primary.isEnabled()).thenReturn(true);
+    when(secondary.isEnabled()).thenReturn(true);
+    when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.error(new RuntimeException("boom1")));
+    when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.error(new RuntimeException("boom2")));
+
+    Flux<ChatResponse> result = router.streamReply(prompt);
+
+    StepVerifier.create(result).verifyError(ProvidersExhaustedException.class);
+  }
+
+  @Test
   void streamThrowsProvidersExhaustedWhenNoProviderIsViable() {
     when(primary.isEnabled()).thenReturn(false);
     when(secondary.isEnabled()).thenReturn(false);

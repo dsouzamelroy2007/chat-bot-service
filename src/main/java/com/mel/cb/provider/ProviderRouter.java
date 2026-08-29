@@ -5,9 +5,11 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -120,59 +122,85 @@ public class ProviderRouter {
 
   /**
    * Streaming counterpart to {@link #getReply}, for the SSE endpoint (Phase 4). Applies the same
-   * skip logic (disabled/over-quota/circuit-open/rate-limited) to pick the first viable provider,
-   * but -- deliberately, unlike {@link #getReply} -- does <b>not</b> fail over to the next provider
-   * if that one errors after streaming has already started: partial tokens may already be on their
-   * way to the client, and retrying would mean replaying or duplicating output rather than cleanly
-   * substituting a whole response the way failover does for the non-streaming path. A failure here
-   * just ends the stream; the caller (ChatReplyService) turns that into a client-visible SSE error
-   * event. Per-chunk token usage isn't reliably available mid-stream, so successful streams are
-   * recorded to {@link QuotaTracker} as a request only (0 tokens) -- enough for the request-count-
-   * metered free tiers (e.g. OpenRouter) to still see streaming traffic, without pretending to know
-   * an exact token count.
+   * skip logic (disabled/over-quota/circuit-open/rate-limited) as {@link #getReply}, and -- as of
+   * the post-Phase-6 live-deployment follow-up (docs/PLAN.md) -- also fails over to the next
+   * provider if the chosen one errors <b>before emitting any chunk at all</b> (its own connect/read
+   * timeout, an immediate 4xx/5xx, etc.). This was added after a live Render deployment showed a
+   * plain, tool-free streaming request could still time out entirely against a single flaky
+   * priority-1 provider with no fallback, unlike {@link #getReply} which already fails past the
+   * same kind of failure. Once at least one chunk has reached the caller, though, this deliberately
+   * still does <b>not</b> fail over on a later error: partial tokens are already on their way to the
+   * client, and retrying would mean replaying or duplicating output rather than cleanly substituting
+   * a whole response the way failover does before anything has been sent. Either way, a failure that
+   * exhausts every remaining provider (or arrives after output has started) just ends the stream; the
+   * caller ({@code ChatReplyService}) turns that into a client-visible SSE error event.
    * <p>
-   * Does <b>not</b> get {@link #getReply}'s empty-reply failover (Phase 6, docs/PLAN.md) -- doing so
+   * The "has anything been emitted yet" check is a plain {@link AtomicBoolean} flipped from
+   * {@code doOnNext}, not a buffering/peek-first-element approach -- this keeps genuine chunks
+   * streaming to the client the moment they arrive, rather than holding the first one back to decide
+   * whether a retry might still be possible.
+   * <p>
+   * Per-chunk token usage isn't reliably available mid-stream, so successful streams are recorded to
+   * {@link QuotaTracker} as a request only (0 tokens) -- enough for the request-count-metered free
+   * tiers (e.g. OpenRouter) to still see streaming traffic, without pretending to know an exact token
+   * count.
+   * <p>
+   * Does <b>not</b> get {@link #getReply}'s empty-but-200 failover (Phase 6, docs/PLAN.md) -- doing so
    * would mean buffering an unknown number of chunks before deciding the whole stream was empty and
-   * only then trying the next provider, which conflicts with actually streaming as chunks arrive.
-   * A provider with the same quirk that caused that fix would show up here as a stream that opens
-   * and then emits nothing, rather than a clean fallback.
+   * only then trying the next provider, which conflicts with actually streaming as chunks arrive. A
+   * provider with the same quirk that caused that fix would show up here as a stream that opens (so
+   * the pre-first-chunk failover above doesn't apply) and then emits nothing, rather than a clean
+   * fallback.
    */
   public Flux<ChatResponse> streamReply(Prompt prompt) {
-    for (ChatProvider provider : registry.all()) {
-      String id = provider.getProviderId();
-      if (!provider.isEnabled()) {
-        log.debug("Skipping provider {}: disabled", id);
-        continue;
-      }
-      if (isOverQuota(provider)) {
-        log.info("Skipping provider {}: at/above 90% of its daily quota", id);
-        continue;
-      }
-      CircuitBreaker circuitBreaker = circuitBreakers.get(id);
-      if (!circuitBreaker.tryAcquirePermission()) {
-        log.info("Skipping provider {}: circuit breaker open", id);
-        continue;
-      }
-      RateLimiter rateLimiter = rateLimiters.get(id);
-      if (!rateLimiter.acquirePermission()) {
-        circuitBreaker.releasePermission();
-        log.info("Skipping provider {}: rate limit exceeded", id);
-        continue;
-      }
-      long start = System.nanoTime();
-      return provider.streamReply(prompt)
-          .doOnComplete(() -> {
-            circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-            if (provider.getLimits() != null && quotaTracker != null) {
-              quotaTracker.recordUsage(id, 0);
-            }
-          })
-          .doOnError(e -> {
-            circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
-            log.warn("Provider {} failed while streaming: {}", id, e.getMessage());
-          });
+    return streamReplyFrom(prompt, registry.all(), 0);
+  }
+
+  private Flux<ChatResponse> streamReplyFrom(Prompt prompt, List<ChatProvider> providers, int index) {
+    if (index >= providers.size()) {
+      throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
     }
-    throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
+    ChatProvider provider = providers.get(index);
+    String id = provider.getProviderId();
+    if (!provider.isEnabled()) {
+      log.debug("Skipping provider {}: disabled", id);
+      return streamReplyFrom(prompt, providers, index + 1);
+    }
+    if (isOverQuota(provider)) {
+      log.info("Skipping provider {}: at/above 90% of its daily quota", id);
+      return streamReplyFrom(prompt, providers, index + 1);
+    }
+    CircuitBreaker circuitBreaker = circuitBreakers.get(id);
+    if (!circuitBreaker.tryAcquirePermission()) {
+      log.info("Skipping provider {}: circuit breaker open", id);
+      return streamReplyFrom(prompt, providers, index + 1);
+    }
+    RateLimiter rateLimiter = rateLimiters.get(id);
+    if (!rateLimiter.acquirePermission()) {
+      circuitBreaker.releasePermission();
+      log.info("Skipping provider {}: rate limit exceeded", id);
+      return streamReplyFrom(prompt, providers, index + 1);
+    }
+
+    long start = System.nanoTime();
+    AtomicBoolean emittedAny = new AtomicBoolean(false);
+    return provider.streamReply(prompt)
+        .doOnNext(response -> emittedAny.set(true))
+        .doOnComplete(() -> {
+          circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+          if (provider.getLimits() != null && quotaTracker != null) {
+            quotaTracker.recordUsage(id, 0);
+          }
+        })
+        .onErrorResume(e -> {
+          circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
+          if (emittedAny.get()) {
+            log.warn("Provider {} failed mid-stream, ending stream (output already sent): {}", id, e.getMessage());
+            return Flux.error(e);
+          }
+          log.warn("Provider {} failed before emitting any output, trying next provider: {}", id, e.getMessage());
+          return streamReplyFrom(prompt, providers, index + 1);
+        });
   }
 
   private boolean isOverQuota(ChatProvider provider) {
