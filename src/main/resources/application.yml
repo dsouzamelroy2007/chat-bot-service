@@ -16,8 +16,11 @@ spring:
       # TimeLimiter below -- found live (Phase 6, docs/PLAN.md) when raising that timeout to 60s
       # still produced a generic 503 at ~30s instead of the intended fallback reply: the container's
       # own async timeout was firing first and never reaching resilience4j's handling at all. Kept
-      # in sync with (at least as long as) resilience4j.timelimiter.instances.chatReply below.
-      request-timeout: 65s
+      # above the larger of resilience4j.timelimiter.instances.chatReply (60s, sync endpoint) and
+      # ChatReplyController.STREAM_TIMEOUT_MS (90s, streaming endpoint, raised post-Phase-6 for the
+      # same Gemini-latency reason -- see that constant's own comment) so each endpoint's own timeout
+      # -- and its intended fallback/error response -- fires before this container-level one does.
+      request-timeout: 95s
   # The OpenAI starter (added in Phase 0 for Phase 1's OpenAI-compatible providers) bundles
   # autoconfiguration for chat, embedding, image, moderation, and audio models. All of them build
   # an OpenAI client eagerly at bean-creation time, which throws without an OPENAI_API_KEY. None of

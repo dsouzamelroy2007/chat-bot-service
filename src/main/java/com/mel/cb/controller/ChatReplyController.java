@@ -33,9 +33,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "Chat Reply", description = "REST APIs that are used by chat bots to provide replies to user messages")
 public class ChatReplyController {
 
-  /** Generous but bounded -- independent of the sync endpoint's 20s resilience4j TimeLimiter, which
-   * would be wrong for a response that can legitimately take longer to fully stream out. */
-  private static final long STREAM_TIMEOUT_MS = 60_000L;
+  /** Generous but bounded -- independent of the sync endpoint's 60s resilience4j TimeLimiter, which
+   * would be wrong for a response that can legitimately take longer to fully stream out. Raised
+   * from 60s (docs/PLAN.md, post-Phase-6 follow-up) after live testing found Gemini (priority 1) can
+   * take up to the same 38-83s documented for the non-streaming endpoint's tool round trips just to
+   * emit its first visible token when tools are attached, which a 60s stream timeout could not
+   * reliably outlast; kept below {@code spring.mvc.async.request-timeout} (application.yml) so this
+   * timeout -- and its clean {@code error} SSE event -- fires before the container's own. Still
+   * doesn't guarantee covering the worst observed case, same accepted tradeoff as the sync path. */
+  private static final long STREAM_TIMEOUT_MS = 90_000L;
 
   @Autowired
   private ChatReplyService chatReplyService;

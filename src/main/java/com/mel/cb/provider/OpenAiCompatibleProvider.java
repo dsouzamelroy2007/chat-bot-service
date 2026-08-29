@@ -1,5 +1,6 @@
 package com.mel.cb.provider;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,23 @@ public class OpenAiCompatibleProvider implements ChatProvider {
             // 429/5xx -- letting the OpenAI SDK's own default (3 retries, with backoff) run first
             // would keep hammering an already-rate-limited provider instead of moving on.
             .maxRetries(0)
+            // Overrides AbstractOpenAiOptions.DEFAULT_TIMEOUT (60s) -- a real, independent call
+            // timeout on the underlying OpenAI-compatible HTTP client itself, found live (docs/
+            // PLAN.md, streaming-regression follow-up) by decompiling AbstractOpenAiOptions after a
+            // long Gemini tool-calling stream kept getting cut off at ~60s regardless of this
+            // service's own SseEmitter/resilience4j timeouts. It's unrelated to and sits underneath
+            // both of those -- raising them alone (as Phase 6 already did for resilience4j's
+            // chatReply TimeLimiter, still 60s) can't help while this default silently caps every
+            // provider call at 60s first, before either of those ever gets a chance to fire.
+            // Deliberately kept below ChatReplyController.STREAM_TIMEOUT_MS (90s), not equal to it --
+            // an equal-value first attempt at this fix (docs/PLAN.md) produced an exact tie live,
+            // which let the SseEmitter's own container-level timeout handling win the race instead of
+            // this app's own catch block on roughly half of runs, silently ending the stream with no
+            // `error` event rather than the intended clean one. 80s gives this timeout -- and this
+            // app's own exception handling in ChatReplyService, which runs off the back of it -- room
+            // to reliably fire first; the sync endpoint's 60s chatReply TimeLimiter already fires
+            // well before either value, unaffected by this change.
+            .timeout(Duration.ofSeconds(80))
             .toolCallbacks(toolCallbacks != null ? toolCallbacks : List.of())
             .build())
         .build();
