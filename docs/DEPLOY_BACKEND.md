@@ -6,10 +6,18 @@ Postgres, and **Upstash** for Redis. All three have a permanent free tier, match
 zero-cost-by-default posture — the same reasoning already applied to every free-tier LLM provider
 and tool in `.env.example`.
 
-These steps prepare and document the deployment; they haven't been executed against real
-Render/Neon/Upstash accounts from this repo (no account access in the environment this was written
-in — same situation as `docs/DEPLOY_WIDGET.md`'s Vercel steps). The `Dockerfile` itself needs no
-changes for this — it was already secret-free (only `COPY`s the built jar, no `ARG`/`ENV` baked in).
+These steps were actually executed against a real Render account, real Neon database, and real
+Upstash instance (2026-08-29) -- unlike `docs/DEPLOY_WIDGET.md`'s Vercel steps, which remain
+docs-only. The first real deploy attempt failed with `COPY target/*.jar app.jar` erroring
+`lstat /target: no such file or directory`: the `Dockerfile` was a single stage that assumed a
+pre-built jar already sat in `target/` (true locally via `start.sh`'s `mvn package` step, never true
+when a host builds straight from the git repo with no separate build step of its own, which is
+exactly what Render does). Fixed by making it a proper multi-stage build -- a `maven:3.9-eclipse-
+temurin-21` stage compiles the jar itself, then the final `eclipse-temurin:21-jre-alpine` stage
+copies it out, same as before. Verified locally by building the image directly from a checkout with
+no local `target/` present (a `.dockerignore` now excludes it from the build context regardless),
+confirming the exact failure Render hit is reproduced and fixed, not just reasoned about. Still
+secret-free either way -- no `ARG`/`ENV` baked in at any stage.
 
 ## 1. Provision Neon (Postgres)
 
