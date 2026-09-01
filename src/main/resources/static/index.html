@@ -165,13 +165,15 @@
     // edit. Override with window.CHAT_API_BASE_URL = "..."; before this block if pointing at a
     // different backend. See docs/PLAN.md Phase 4 notes and docs/DEPLOY_WIDGET.md.
     const API_BASE_URL = window.CHAT_API_BASE_URL || "https://chat-bot-service-06gv.onrender.com/bot";
-    // Only needed if the backend has chatbot.security.api-key (CHATBOT_API_KEY) set (Phase 5,
-    // docs/PLAN.md) -- set via window.CHAT_API_KEY = "..."; before this block, same pattern as
-    // CHAT_API_BASE_URL above. Note this is a shared secret with the backend, not a per-visitor
-    // one: anyone viewing this page's source can read it. It stops anonymous scripts/bots that
-    // don't bother and off-origin callers (still blocked by the backend's own CORS allow-list),
-    // not a determined visitor of the widget itself.
-    const API_KEY = window.CHAT_API_KEY || "";
+    // Matches chatbot.security.api-key (CHATBOT_API_KEY) set on the live Render backend (Phase 5,
+    // docs/PLAN.md) -- hardcoded here for the same reason API_BASE_URL is: this static widget has
+    // no build step on Vercel, so there's no way to inject it at deploy time. This is a shared
+    // secret with the backend, not a per-visitor one: anyone viewing this page's source can read
+    // it. It stops anonymous scripts/bots that don't bother and off-origin callers (still blocked
+    // by the backend's own CORS allow-list), not a determined visitor of the widget itself.
+    // Override with window.CHAT_API_KEY = "..."; before this block if pointing at a different
+    // backend with its own key.
+    const API_KEY = window.CHAT_API_KEY || "b5da2b13af15341cdee647910fbc12ed460c2f3bf7174c7f";
     const BOT_ID = "web-widget";
     const USER_ID = getOrCreateId("chatbot_user_id");
     let conversationId = localStorage.getItem("chatbot_conversation_id") || null;
