@@ -159,12 +159,12 @@
   </div>
 
   <script>
-    // Same-origin by default (relative fetch, unchanged from before). Set this to the deployed
-    // backend's URL (no trailing slash) when this file is hosted standalone -- e.g. on Vercel,
-    // separately from the Spring Boot app -- by adding
-    //   <script>window.CHAT_API_BASE_URL = "https://your-backend.example.com/bot";</script>
-    // before this block. See docs/PLAN.md Phase 4 notes and the widget/ deployment README.
-    const API_BASE_URL = window.CHAT_API_BASE_URL || "";
+    // Points at the live Render backend by default -- an absolute URL works identically whether
+    // this file is served same-origin by the Spring Boot app itself (its own /bot context path)
+    // or standalone (e.g. on Vercel), so one committed value covers both without a per-deploy
+    // edit. Override with window.CHAT_API_BASE_URL = "..."; before this block if pointing at a
+    // different backend. See docs/PLAN.md Phase 4 notes and docs/DEPLOY_WIDGET.md.
+    const API_BASE_URL = window.CHAT_API_BASE_URL || "https://chat-bot-service-06gv.onrender.com/bot";
     // Only needed if the backend has chatbot.security.api-key (CHATBOT_API_KEY) set (Phase 5,
     // docs/PLAN.md) -- set via window.CHAT_API_KEY = "..."; before this block, same pattern as
     // CHAT_API_BASE_URL above. Note this is a shared secret with the backend, not a per-visitor

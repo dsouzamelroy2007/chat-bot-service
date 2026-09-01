@@ -22,17 +22,12 @@ set the project's **Root Directory** to `src/main/resources/static` in the dashb
 
 ## 2. Point the widget at the deployed backend
 
-Once deployed, the widget is on a different origin than the API (e.g.
-`https://your-widget.vercel.app` vs `https://your-backend.onrender.com`), so it needs to know where
-to send requests. Add one line before the widget's own `<script>` block in `index.html`:
-
-```html
-<script>window.CHAT_API_BASE_URL = "https://your-backend.onrender.com/bot";</script>
-```
-
-(include the `/bot` context path — see `application.yml`'s `server.servlet.context-path`). Without
-this override the widget defaults to same-origin relative requests, which is correct when it's
-served by the Spring Boot app itself but wrong once it's on Vercel.
+`index.html` already defaults `API_BASE_URL` to the live Render backend
+(`https://chat-bot-service-06gv.onrender.com/bot`) — an absolute URL works the same whether the
+file is served same-origin by the Spring Boot app or standalone on Vercel, so no edit is needed for
+that backend. Only override it (via a `<script>window.CHAT_API_BASE_URL = "...";</script>` tag
+before the widget's own `<script>` block) if pointing this deployment at a different backend
+instance.
 
 ## 3. Allow the widget's origin on the backend
 
