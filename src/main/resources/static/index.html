@@ -224,9 +224,13 @@
       return el;
     }
 
-    // Parses one "event: name\ndata: line1\ndata: line2" SSE frame (already split on the blank
+    // Parses one "event:name\ndata:line1\ndata:line2" SSE frame (already split on the blank
     // line that terminates it) into { event, data }. `event` defaults to "message" per the SSE
     // spec when no `event:` line is present, matching how a native EventSource would report it.
+    // Data lines are NOT trimmed: this backend's SseEmitter writes "data:" with no delimiter
+    // space (confirmed against the actual Spring bytecode, not assumed), so every character
+    // after the colon -- including a token's own leading/trailing space -- is real reply text;
+    // trimming it here previously ran streamed words together with no space between them.
     function parseSseFrame(raw) {
       let eventName = "message";
       const dataLines = [];
@@ -234,7 +238,7 @@
         if (line.startsWith("event:")) {
           eventName = line.slice(6).trim();
         } else if (line.startsWith("data:")) {
-          dataLines.push(line.slice(5).trim());
+          dataLines.push(line.slice(5));
         }
       }
       return { event: eventName, data: dataLines.length ? dataLines.join("\n") : undefined };
