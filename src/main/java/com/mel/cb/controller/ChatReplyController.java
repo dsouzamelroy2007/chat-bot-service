@@ -63,21 +63,19 @@ public class ChatReplyController {
   public CompletableFuture<ResponseEntity<ChatReply>> replyToUser(@Valid @RequestBody ChatMessage chatMessage) {
     return CompletableFuture.supplyAsync(() -> {
       Instant startTime = Instant.now();
-      try {
-        ChatReply response = chatReplyService.getReplyForUserMessage(chatMessage);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-      } finally {
-        log.info("RequestType: {}, Response_Code: {}, Timestamp: {} ms", "chat_message_reply", HttpStatus.OK,
-            Duration
-                .between(startTime, Instant.now())
-                .toMillis());
-      }
+      ChatReply response = chatReplyService.getReplyForUserMessage(chatMessage);
+      log.info("chat_reply userId={} conversationId={} status=200 durationMs={}",
+          chatMessage.getUserId(), response.getConversationId(),
+          Duration.between(startTime, Instant.now()).toMillis());
+      return new ResponseEntity<>(response, HttpStatus.OK);
     }, chatReplyExecutor);
   }
 
 
 
   public CompletableFuture<ResponseEntity<ChatReply>> fallback_replyToUser_AI_API_TIMEOUT(ChatMessage chatMessage, Throwable throwable){
+    log.warn("chat_reply userId={} conversationId={} status=502 fallback=circuit_breaker_or_timeout cause={}",
+        chatMessage.getUserId(), chatMessage.getConversationId(), throwable.toString());
     ChatReply chatReply = ChatDataUtil.getChatReplyFromText(null);
     chatReply.setConversationId(chatMessage.getConversationId());
     return CompletableFuture.completedFuture(new ResponseEntity<>(chatReply, HttpStatus.BAD_GATEWAY));

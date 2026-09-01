@@ -12,6 +12,8 @@ import com.mel.cb.provider.ProviderRouter;
 import com.mel.cb.util.ChatDataUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -112,6 +114,7 @@ public class ChatReplyService {
    * method's own catch block -- gets there first actually touches the emitter again.
    */
   public void streamReplyForUserMessage(ChatMessage chatMessage, SseEmitter emitter) {
+    Instant startTime = Instant.now();
     String conversationId = resolveConversationId(chatMessage.getConversationId());
     StringBuilder fullText = new StringBuilder();
     AtomicBoolean emitterFinished = new AtomicBoolean(false);
@@ -142,6 +145,8 @@ public class ChatReplyService {
       if (emitterFinished.compareAndSet(false, true)) {
         emitter.complete();
       }
+      log.info("chat_reply_stream userId={} conversationId={} status=200 durationMs={}",
+          chatMessage.getUserId(), conversationId, Duration.between(startTime, Instant.now()).toMillis());
     } catch (Exception e) {
       log.error("Exception while streaming AI reply for message {}", chatMessage, e);
       completeWithError(emitter, emitterFinished);
