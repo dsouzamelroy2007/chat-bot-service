@@ -2,7 +2,7 @@
 
 A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. It remembers a conversation (Redis + Postgres), can call a handful of tools mid-reply (weather, time, directions, web search), streams replies token-by-token over SSE, and is hardened for public exposure (rate limiting, request limits, optional API-key auth). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
 
-**Contents:** [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Running the application](#running-the-application) · [Chat widget](#chat-widget) · [Testing](#testing) · [API](#api) · [Security](#security) · [Conversation memory](#conversation-memory) · [Tools](#tools) · [Deployment](#deployment) · [Further improvements](#further-improvements)
+**Contents:** [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Running the application](#running-the-application) · [Chat widget](#chat-widget) · [Testing](#testing) · [API](#api) · [Security](#security) · [Conversation memory](#conversation-memory) · [Tools](#tools) · [Deployment](#deployment)
 
 ## Tech stack
 
@@ -139,7 +139,7 @@ Provider selection happens once, before the first token — a provider that fail
 - **Rate limiting** — 20 requests/minute per client IP (`X-Forwarded-For` if present, else the socket address); a client over that limit gets `429` with `Retry-After: 60`. This is separate from each LLM provider's own daily quota tracking done further downstream — it protects this service's own front door, not the providers behind it.
 - **API key auth** — set `CHATBOT_API_KEY` and every `/chat/**` request must include a matching `X-API-Key` header, or it's rejected with `401`. Unset (the default) means no auth check at all — a startup log warns when this is the case. This is a single shared secret between your own client(s) and the API, not per-user auth; a publicly-hosted static widget baking this key into its page source can't keep it secret from a visitor who views source, only from anonymous scripts/bots and other origins (still gated by `CHATBOT_CORS_ALLOWED_ORIGINS`).
 - **Security response headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on every response, plus `Cache-Control: no-store` on `/chat/**` replies.
-- **Actuator** exposes only `/actuator/health` (no details) over HTTP — everything else is off by default.
+- **Actuator** exposes `/actuator/health` (no details, unauthenticated — hosting platforms like Render need this reachable for their own health checks) and `/actuator/metrics` (per-endpoint request counts/latency, gated by the same `X-API-Key` check as `/chat/**`) over HTTP. Everything else is off by default.
 
 ## Conversation memory
 
@@ -171,11 +171,8 @@ The app, its Postgres, and its Redis can each be hosted for free, separately:
 See [docs/DEPLOY_BACKEND.md](docs/DEPLOY_BACKEND.md) for the full walkthrough (env vars, health check
 path, Neon/Upstash-specific config) and [render.yaml](render.yaml) for an optional Blueprint. The
 widget can be deployed separately too (e.g. to Vercel) — see
-[docs/DEPLOY_WIDGET.md](docs/DEPLOY_WIDGET.md). Neither has been executed against a real account
-from this repo; both docs are written and ready to follow, not a confirmation that it's live
-somewhere.
-
-## Further improvements
-
-- Application monitoring for response time and performance across all endpoints.
-- Richer structured logging (currently logs a simple per-request response time).
+[docs/DEPLOY_WIDGET.md](docs/DEPLOY_WIDGET.md). Both are live from this repo, not just documented:
+the backend at https://chat-bot-service-06gv.onrender.com (`/bot` context path) and the widget at
+https://chat-bot-service-rust.vercel.app, talking to each other cross-origin with CORS and API-key
+auth both configured — see `docs/PLAN.md`'s "Widget deployed to Vercel" and "API key enforcement"
+sections for how that was verified end to end.
