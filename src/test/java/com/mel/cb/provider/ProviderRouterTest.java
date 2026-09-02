@@ -40,7 +40,7 @@ class ProviderRouterTest {
 
   private ProviderRouter router;
 
-  private final Prompt prompt = ChatPrompts.of("sys", null, List.of(), "hi");
+  private final Prompt prompt = ChatPrompts.of("sys", null, List.of(), List.of(), "hi");
 
   @BeforeEach
   void setUp() {

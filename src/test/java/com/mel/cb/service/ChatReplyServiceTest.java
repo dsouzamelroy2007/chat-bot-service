@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -84,6 +85,24 @@ public class ChatReplyServiceTest {
     Assertions.assertNotNull(actualReply.getConversationId());
     verify(memoryService).recordTurn(actualReply.getConversationId(), chatMessage.getUserId(),
         chatMessage.getMessage(), actualReply.getReply());
+  }
+
+  @Test
+  public void testGetReplyForUserMessageIncludesRetrievedFactsInThePrompt() {
+    when(memoryService.findRelevantFacts(chatMessage.getUserId(), chatMessage.getMessage()))
+        .thenReturn(List.of("likes coffee", "based in Amsterdam"));
+    ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(chatReply.getReply()))));
+    when(providerRouter.getReply(any(Prompt.class))).thenReturn(response);
+
+    chatReplyService.getReplyForUserMessage(chatMessage);
+
+    ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+    verify(providerRouter).getReply(promptCaptor.capture());
+    String allMessageText = promptCaptor.getValue().getInstructions().stream()
+        .map(m -> m.getText())
+        .reduce("", String::concat);
+    Assertions.assertTrue(allMessageText.contains("likes coffee"));
+    Assertions.assertTrue(allMessageText.contains("based in Amsterdam"));
   }
 
   @Test

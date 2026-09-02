@@ -181,6 +181,18 @@ chatbot:
       base-url: https://api.tavily.com
       api-key-env: TAVILY_API_KEY
 
+  # RAG fact retrieval (docs/PLAN.md) -- reuses Gemini's already-configured OpenAI-compatible
+  # endpoint/key (chatbot.providers below) rather than a separate provider, since embeddings are a
+  # nice-to-have augmentation to the reply, not the core path. FactEmbeddingConfig resolves
+  # api-key-env and the service disables itself (same convention as chatbot.tools above) if unset.
+  # dimensions must match V2__add_embedding_to_user_facts.sql's vector(N) width exactly.
+  embedding:
+    base-url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: gemini-embedding-001
+    api-key-env: GEMINI_API_KEY
+    dimensions: 768
+    top-k: 5
+
   # Free-tier OpenAI-compatible providers, tried in priority order by ProviderRouter. Each
   # `limits` block is what QuotaTracker checks against (90% of either cap skips the provider for
   # the rest of the UTC day); the verified-on comment records when these numbers were last

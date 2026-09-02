@@ -1,5 +1,6 @@
 package com.mel.cb;
 
+import com.mel.cb.embedding.FactEmbeddingProperties;
 import com.mel.cb.memory.ConversationMemoryProperties;
 import com.mel.cb.provider.ChatbotProviderProperties;
 import com.mel.cb.security.SecurityProperties;
@@ -17,7 +18,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @SpringBootApplication
 @EnableAsync
 @EnableConfigurationProperties({ChatbotProviderProperties.class, ConversationMemoryProperties.class, ToolsProperties.class,
-    SecurityProperties.class})
+    SecurityProperties.class, FactEmbeddingProperties.class})
 public class ChatBotService {
 
   public static void main(String[] args) {

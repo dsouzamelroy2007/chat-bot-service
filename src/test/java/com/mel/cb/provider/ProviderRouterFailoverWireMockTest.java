@@ -92,7 +92,7 @@ class ProviderRouterFailoverWireMockTest {
   }
 
   private static Prompt testPrompt() {
-    return ChatPrompts.of("system", null, List.of(), "hi");
+    return ChatPrompts.of("system", null, List.of(), List.of(), "hi");
   }
 
   private static OpenAiCompatibleProvider provider(String id, String baseUrl, int priority, ProviderLimits limits) {

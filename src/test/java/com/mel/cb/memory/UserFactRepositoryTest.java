@@ -3,6 +3,7 @@ package com.mel.cb.memory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.mel.cb.embedding.FactEmbeddingService;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
 import java.time.Instant;
@@ -46,7 +47,11 @@ import org.testcontainers.utility.DockerImageName;
 @Transactional
 class UserFactRepositoryTest {
 
-  static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"));
+  // pgvector/pgvector:pg16 (RAG follow-up, docs/PLAN.md) -- same Postgres 16 base as plain
+  // postgres:16-alpine but with the pgvector extension preinstalled, required by
+  // V2__add_embedding_to_user_facts.sql's CREATE EXTENSION vector.
+  static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("pgvector/pgvector:pg16")
+      .asCompatibleSubstituteFor("postgres"));
 
   static {
     POSTGRES.start();
@@ -115,6 +120,71 @@ class UserFactRepositoryTest {
     List<UserFact> facts = repository.findByUserId("user-1");
 
     assertEquals(2, facts.size());
+  }
+
+  @Test
+  void findMostSimilarOrdersByCosineDistanceClosestFirst() {
+    Instant now = Instant.now();
+    UserFact closeToQuery = repository.saveAndFlush(new UserFact(null, "user-1", "likes coffee", "conv-1", now, now));
+    UserFact farFromQuery = repository.saveAndFlush(new UserFact(null, "user-1", "based in Amsterdam", "conv-1", now, now));
+    repository.updateEmbedding(closeToQuery.getId(), literal(vector(0, 0.9f, 1, 0.1f)));
+    repository.updateEmbedding(farFromQuery.getId(), literal(vector(0, 0.1f, 1, 0.9f)));
+
+    List<UserFact> results = repository.findMostSimilar("user-1", literal(vector(0, 1f, 1, 0f)), 10);
+
+    assertEquals(List.of("likes coffee", "based in Amsterdam"), results.stream().map(UserFact::getFact).toList());
+  }
+
+  @Test
+  void findMostSimilarExcludesFactsWithNoEmbedding() {
+    Instant now = Instant.now();
+    UserFact embedded = repository.saveAndFlush(new UserFact(null, "user-1", "likes coffee", "conv-1", now, now));
+    repository.saveAndFlush(new UserFact(null, "user-1", "no embedding yet", "conv-1", now, now));
+    repository.updateEmbedding(embedded.getId(), literal(vector(0, 1f)));
+
+    List<UserFact> results = repository.findMostSimilar("user-1", literal(vector(0, 1f)), 10);
+
+    assertEquals(List.of("likes coffee"), results.stream().map(UserFact::getFact).toList());
+  }
+
+  @Test
+  void findMostSimilarIsScopedToTheGivenUser() {
+    Instant now = Instant.now();
+    UserFact user1Fact = repository.saveAndFlush(new UserFact(null, "user-1", "likes coffee", "conv-1", now, now));
+    UserFact user2Fact = repository.saveAndFlush(new UserFact(null, "user-2", "likes tea", "conv-2", now, now));
+    repository.updateEmbedding(user1Fact.getId(), literal(vector(0, 1f)));
+    repository.updateEmbedding(user2Fact.getId(), literal(vector(0, 1f)));
+
+    List<UserFact> results = repository.findMostSimilar("user-1", literal(vector(0, 1f)), 10);
+
+    assertEquals(List.of("likes coffee"), results.stream().map(UserFact::getFact).toList());
+  }
+
+  @Test
+  void findMostSimilarLimitsToTopK() {
+    Instant now = Instant.now();
+    for (int i = 0; i < 5; i++) {
+      UserFact fact = repository.saveAndFlush(new UserFact(null, "user-1", "fact " + i, "conv-1", now, now));
+      repository.updateEmbedding(fact.getId(), literal(vector(0, 1f)));
+    }
+
+    List<UserFact> results = repository.findMostSimilar("user-1", literal(vector(0, 1f)), 3);
+
+    assertEquals(3, results.size());
+  }
+
+  /** 768-dim vector (matches V2's {@code vector(768)} width) with the given index/value pairs set,
+   * all other dimensions zero. */
+  private static float[] vector(Object... indexValuePairs) {
+    float[] v = new float[768];
+    for (int i = 0; i < indexValuePairs.length; i += 2) {
+      v[(int) indexValuePairs[i]] = (float) indexValuePairs[i + 1];
+    }
+    return v;
+  }
+
+  private static String literal(float[] vector) {
+    return FactEmbeddingService.toPgVectorLiteral(vector);
   }
 
 }

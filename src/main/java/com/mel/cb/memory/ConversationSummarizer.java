@@ -48,7 +48,7 @@ public class ConversationSummarizer {
         %s
         """.formatted(existingSummary == null || existingSummary.isBlank() ? "(none yet)" : existingSummary, transcript);
 
-    Prompt prompt = ChatPrompts.of(SYSTEM_PROMPT, null, List.of(), instruction);
+    Prompt prompt = ChatPrompts.of(SYSTEM_PROMPT, null, List.of(), List.of(), instruction);
     try {
       ChatResponse response = providerRouter.getReply(prompt);
       String text = response.getResult() != null ? response.getResult().getOutput().getText() : null;

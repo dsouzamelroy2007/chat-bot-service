@@ -176,7 +176,8 @@ public class ChatReplyService {
 
   private Prompt buildPrompt(ChatMessage chatMessage, ConversationContext context) {
     List<Message> history = context.turns().stream().map(ConversationTurn::toMessage).toList();
-    return ChatPrompts.of(systemPrompt, context.summary(), history, chatMessage.getMessage());
+    List<String> facts = memoryService.findRelevantFacts(chatMessage.getUserId(), chatMessage.getMessage());
+    return ChatPrompts.of(systemPrompt, context.summary(), facts, history, chatMessage.getMessage());
   }
 
   private static String extractText(ChatResponse response) {
