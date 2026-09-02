@@ -90,6 +90,17 @@ management:
 logging:
   level:
     root: INFO
+    # Spring AI's own internal class hardcodes an ERROR-level log for any upstream Flux failure
+    # during a streamed chat call -- including ones ProviderRouter.streamReplyFrom already recovers
+    # from via pre-first-chunk failover (its own WARN log, with provider id and outcome, is the
+    # useful signal for that). Left at INFO would leak a raw provider stack trace (e.g. a routine
+    # transient 503 from a free-tier provider under load) into ERROR-level output for something
+    # that isn't actually an unhandled failure -- found live via a real Gemini "high demand" 503
+    # that the router silently failed over past while the user got a normal reply. Suppressed here
+    # rather than left to pollute ERROR-level monitoring/alerting with false positives; a genuine,
+    # unrecoverable failure (every provider exhausted) still surfaces via ProviderRouter's own
+    # ERROR/WARN logs and ChatReplyController's fallback-method WARN, unaffected by this.
+    org.springframework.ai.chat.model.MessageAggregator: OFF
 
 resilience4j:
   timelimiter:
