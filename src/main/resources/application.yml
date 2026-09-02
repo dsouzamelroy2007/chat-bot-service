@@ -181,13 +181,19 @@ chatbot:
       api-key-env: GEMINI_API_KEY
       priority: 1
       limits:
-        requests-per-day: 250
+        requests-per-day: 20
         tokens-per-day: 50000000
-        # verified-on: 2026-08-28 -- Google AI Studio free tier, gemini-2.5-flash: 10 RPM / 250
-        # RPD / 250K TPM per official docs. No published per-day token cap; tokens-per-day here
-        # is a generous non-binding safety ceiling -- requests-per-day is the real constraint.
-        # Not re-verified for gemini-flash-latest specifically on 2026-08-29 -- kept as the same
-        # conservative flash-tier figures pending a closer look.
+        # verified-on: 2026-09-02 -- Google's own rate-limits doc (ai.google.dev/gemini-api/docs/
+        # rate-limits) no longer publishes fixed free-tier numbers at all; limits are personalized
+        # per Google AI Studio account/tier and viewed on a per-account dashboard there, so there's
+        # no longer a single published figure to check against. The best evidence available is a
+        # real 429 response body seen live against this exact configured model (gemini-flash-latest)
+        # during a prior session's testing, reporting a 20 requests/day cap -- used here instead of
+        # the previous 250 (itself stale: verified 2026-08-28 against the older gemini-2.5-flash
+        # before the model was swapped, never re-verified for gemini-flash-latest). tokens-per-day
+        # is still a generous non-binding safety ceiling; requests-per-day is the real constraint,
+        # and 20/day is tight enough that QuotaTracker's 90% skip threshold now actually engages
+        # after ~18 requests instead of only after 225.
     - id: groq
       base-url: https://api.groq.com/openai/v1
       # llama-3.3-70b-versatile 404'd ("does not exist or you do not have access to it") as of live
@@ -198,13 +204,14 @@ chatbot:
       api-key-env: GROQ_API_KEY
       priority: 2
       limits:
-        requests-per-day: 14400
-        tokens-per-day: 100000
-        # verified-on: 2026-08-28 -- Groq free tier, llama-3.3-70b-versatile: 30 RPM / 14,400 RPD.
-        # Per-model TPM is reported as 6K-20K depending on model; ~100K tokens/day is the commonly
-        # cited practical ceiling for steady use of this model -- treat as approximate.
-        # Not re-verified for openai/gpt-oss-20b specifically on 2026-08-29 -- kept as the same
-        # conservative figures pending a closer look.
+        requests-per-day: 1000
+        tokens-per-day: 200000
+        # verified-on: 2026-09-02 -- Groq's own rate-limits doc (console.groq.com/docs/rate-limits),
+        # openai/gpt-oss-20b specifically: 30 RPM / 1,000 RPD / 8K TPM / 200K TPD. Replaces the
+        # previous 14,400 RPD figure, which was carried over from the old llama-3.3-70b-versatile
+        # model (removed 2026-08-29) and overstated Groq's real cap by more than 14x -- at that
+        # figure, QuotaTracker's 90% skip threshold would never have engaged before Groq's own
+        # 429s did.
     # Cerebras removed (Phase 6, docs/PLAN.md) -- its genuinely-free (no payment method) tier ended
     # 2026-08-17; every model on the account returns 402 Payment required as of live testing on
     # 2026-08-29, confirmed against a freshly-created account too, so this isn't fixable by rotating
@@ -218,10 +225,12 @@ chatbot:
       limits:
         requests-per-day: 500
         tokens-per-day: 33000000
-        # verified-on: 2026-08-28 -- Mistral no longer publishes exact free-tier ("Experiment"
-        # plan) rate limits; ~1B tokens/month is commonly cited (~33M/day here). requests-per-day
-        # is a conservative placeholder -- check https://admin.mistral.ai/plateforme/limits and
-        # adjust before relying on this in production.
+        # verified-on: 2026-09-02 (re-checked, unchanged since 2026-08-28) -- Mistral still doesn't
+        # publish exact free-tier ("Experiment" plan) rate limits; the two docs.mistral.ai pages
+        # that might have (deployment/laplateforme/tier, deployment/ai-studio/tier) both 404 as of
+        # this check. ~1B tokens/month is commonly cited (~33M/day here). requests-per-day is a
+        # conservative placeholder -- check https://admin.mistral.ai/plateforme/limits and adjust
+        # before relying on this in production.
     - id: openrouter
       base-url: https://openrouter.ai/api/v1
       # deepseek/deepseek-chat-v3.1:free no longer exists in OpenRouter's model list as of live
@@ -235,7 +244,31 @@ chatbot:
       limits:
         requests-per-day: 50
         tokens-per-day: 100000000
-        # verified-on: 2026-08-28 -- OpenRouter free-model daily cap: 50 requests/day with no
-        # purchased credit balance (rises to 1000/day after any $10+ lifetime purchase), 20 RPM.
-        # OpenRouter meters free models by request count, not tokens, so tokens-per-day here is a
-        # generous non-binding safety ceiling.
+        # verified-on: 2026-09-02 (re-confirmed against openrouter.ai/docs/api_reference/limits,
+        # unchanged since the 2026-08-28 figure) -- OpenRouter free-model daily cap: 50 requests/day
+        # with no purchased credit balance (rises to 1000/day after any $10+ lifetime purchase), 20
+        # RPM. OpenRouter meters free models by request count, not tokens, so tokens-per-day here is
+        # a generous non-binding safety ceiling.
+
+---
+# Structured (JSON) console logging outside local dev -- Render's and docker-compose's log viewers
+# show plain framework/app lines mixed together with no way to filter by field; JSON lines are
+# searchable by userId/conversationId/status/level the way the request-level logs added alongside
+# this now emit. Uses Spring Boot 4.1's own built-in structured logging
+# (logging.structured.format.console, confirmed against the official Spring Boot reference docs) --
+# no extra dependency needed despite logstash-logback-encoder having been added to pom.xml back in
+# Phase 0 for exactly this purpose and never wired up: Boot's own StructuredLogFormatter now
+# produces the same logstash JSON shape natively, so that dependency was removed rather than used.
+# Scoped to "!local" (a separate profile-activated document, not a key in application-local.yml)
+# so a human running `mvn spring-boot:run -Dspring-boot.run.profiles=local` still gets Boot's
+# normal readable console pattern -- JSON lines would be actively worse for reading logs at a
+# terminal during local development.
+spring:
+  config:
+    activate:
+      on-profile: "!local"
+
+logging:
+  structured:
+    format:
+      console: logstash
