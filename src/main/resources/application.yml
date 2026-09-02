@@ -69,14 +69,20 @@ management:
   metrics:
     web:
       server:
-        auto-time-requests: false
+        # Re-enabled (observability follow-up, docs/PLAN.md) -- Micrometer's built-in per-request
+        # timer (http.server.requests), auto-recorded for every endpoint with no extra dependency.
+        # Was explicitly off with no recorded reason; queryable now via /actuator/metrics, gated by
+        # com.mel.cb.security.ApiKeyAuthFilter the same way /chat/** is (see SecurityFilterConfig).
+        auto-time-requests: true
   # Pinned explicitly (Phase 5, docs/PLAN.md) rather than relying on Spring Boot's own default
   # (which already happens to be health-only) -- a future dependency or config change silently
-  # widening this shouldn't be able to leak internals to the public internet unnoticed.
+  # widening this shouldn't be able to leak internals to the public internet unnoticed. metrics
+  # added (observability follow-up) -- gated by the same optional CHATBOT_API_KEY as /chat/**, see
+  # SecurityFilterConfig; unlike health, this isn't needed unauthenticated by the hosting platform.
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,metrics
   endpoint:
     health:
       show-details: never

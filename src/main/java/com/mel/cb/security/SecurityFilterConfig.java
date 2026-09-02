@@ -37,8 +37,9 @@ public class SecurityFilterConfig {
   @PostConstruct
   void logAuthStatus() {
     if (properties.getApiKey() == null || properties.getApiKey().isBlank()) {
-      log.warn("chatbot.security.api-key (CHATBOT_API_KEY) is not set -- /chat/** is reachable "
-          + "without authentication. Set it before exposing this service publicly.");
+      log.warn("chatbot.security.api-key (CHATBOT_API_KEY) is not set -- /chat/** and "
+          + "/actuator/metrics/** are reachable without authentication. Set it before exposing "
+          + "this service publicly.");
     }
   }
 
@@ -82,6 +83,23 @@ public class SecurityFilterConfig {
   public FilterRegistrationBean<ApiKeyAuthFilter> apiKeyAuthFilter() {
     FilterRegistrationBean<ApiKeyAuthFilter> registration = new FilterRegistrationBean<>(new ApiKeyAuthFilter(properties));
     registration.addUrlPatterns("/chat/*");
+    registration.setOrder(-30);
+    return registration;
+  }
+
+  /**
+   * Same {@link ApiKeyAuthFilter}, a second registration scoped to {@code /actuator/metrics/*}
+   * (observability follow-up, docs/PLAN.md) -- unlike {@code /actuator/health}, which Render's own
+   * platform health check hits unauthenticated and must stay open, {@code /actuator/metrics}
+   * exposes per-endpoint request counts/latency and has no reason to be reachable by anyone
+   * without the same shared secret {@code /chat/**} already requires when configured.
+   */
+  @Bean
+  public FilterRegistrationBean<ApiKeyAuthFilter> actuatorMetricsApiKeyAuthFilter() {
+    FilterRegistrationBean<ApiKeyAuthFilter> registration = new FilterRegistrationBean<>(new ApiKeyAuthFilter(properties));
+    // Both patterns needed: "/actuator/metrics" itself (the list-of-metric-names endpoint) doesn't
+    // match a "/*" suffix pattern in servlet URL-mapping syntax, only "/actuator/metrics/{name}" does.
+    registration.addUrlPatterns("/actuator/metrics", "/actuator/metrics/*");
     registration.setOrder(-30);
     return registration;
   }
