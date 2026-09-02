@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -33,6 +34,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
+    // A browser sends one CORS preflight (OPTIONS) automatically before nearly every cross-origin
+    // POST with a JSON body/custom header -- counting it here would silently halve the effective
+    // per-client limit for any such caller (two requests consumed per real chat message) without
+    // ever showing up as a deliberate design choice. Same reasoning as the identical check in
+    // ApiKeyAuthFilter, found alongside it live.
+    if (CorsUtils.isPreFlightRequest(request)) {
+      chain.doFilter(request, response);
+      return;
+    }
     if (!properties.getRateLimit().isEnabled()) {
       chain.doFilter(request, response);
       return;

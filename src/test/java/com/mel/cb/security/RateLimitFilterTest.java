@@ -84,6 +84,28 @@ class RateLimitFilterTest {
   }
 
   @Test
+  void doesNotCountCorsPreflightAgainstTheLimit() throws Exception {
+    RateLimitFilter filter = new RateLimitFilter(enabled(), registryAllowingOnePerMinute());
+
+    for (int i = 0; i < 3; i++) {
+      MockHttpServletRequest preflight = new MockHttpServletRequest("OPTIONS", "/bot/chat/reply");
+      preflight.setRemoteAddr("10.0.0.1");
+      preflight.addHeader("Origin", "https://widget.example.com");
+      preflight.addHeader("Access-Control-Request-Method", "POST");
+      MockHttpServletResponse response = new MockHttpServletResponse();
+      filter.doFilter(preflight, response, new MockFilterChain());
+      assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    // The limiter's single slot for this client is still unused -- a real POST still succeeds.
+    MockHttpServletRequest realRequest = new MockHttpServletRequest("POST", "/bot/chat/reply");
+    realRequest.setRemoteAddr("10.0.0.1");
+    MockHttpServletResponse realResponse = new MockHttpServletResponse();
+    filter.doFilter(realRequest, realResponse, new MockFilterChain());
+    assertThat(realResponse.getStatus()).isEqualTo(200);
+  }
+
+  @Test
   void skipsEnforcementWhenDisabled() throws Exception {
     SecurityProperties properties = new SecurityProperties();
     properties.getRateLimit().setEnabled(false);

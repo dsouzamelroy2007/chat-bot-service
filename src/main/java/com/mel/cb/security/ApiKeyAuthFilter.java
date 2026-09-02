@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -38,6 +39,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
+    // A browser's own CORS preflight (OPTIONS, sent automatically before the real cross-origin
+    // request) never carries this app's custom headers by design -- rejecting it here breaks every
+    // cross-origin caller once an API key is configured, before Spring's own CORS handling
+    // (com.mel.cb.config.CorsConfig, which runs later at MVC dispatch and is what actually
+    // approves/denies the preflight by origin) ever gets a chance to run. Found live: the deployed
+    // widget started failing every request with a generic "could not reach the service" error the
+    // moment CHATBOT_API_KEY was set on the backend.
+    if (CorsUtils.isPreFlightRequest(request)) {
+      chain.doFilter(request, response);
+      return;
+    }
     String configuredKey = properties.getApiKey();
     if (configuredKey == null || configuredKey.isBlank()) {
       chain.doFilter(request, response);

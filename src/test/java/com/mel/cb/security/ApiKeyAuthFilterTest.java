@@ -49,6 +49,20 @@ class ApiKeyAuthFilterTest {
   }
 
   @Test
+  void allowsCorsPreflightThroughEvenWhenApiKeyConfigured() throws Exception {
+    ApiKeyAuthFilter filter = new ApiKeyAuthFilter(withApiKey("secret"));
+    MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/bot/chat/reply");
+    request.addHeader("Origin", "https://widget.example.com");
+    request.addHeader("Access-Control-Request-Method", "POST");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    MockFilterChain chain = new MockFilterChain();
+
+    filter.doFilter(request, response, chain);
+
+    assertThat(chain.getRequest()).isNotNull();
+  }
+
+  @Test
   void allowsMatchingHeaderWhenApiKeyConfigured() throws Exception {
     ApiKeyAuthFilter filter = new ApiKeyAuthFilter(withApiKey("secret"));
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/bot/chat/reply");
