@@ -1,7 +1,6 @@
 # Deploying the backend (Render + Neon + Upstash)
 
-The target stack (decided ahead of this phase, see `docs/PLAN.md` Phase 6 target platform notes):
-**Render** for the app itself (builds straight from the existing `Dockerfile`), **Neon** for
+The target stack: **Render** for the app itself (builds straight from the existing `Dockerfile`), **Neon** for
 Postgres, and **Upstash** for Redis. All three have a permanent free tier, matching this project's
 zero-cost-by-default posture — the same reasoning already applied to every free-tier LLM provider
 and tool in `.env.example`.

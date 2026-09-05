@@ -4,8 +4,8 @@ The chat widget ([`src/main/resources/static/index.html`](../src/main/resources/
 is a single self-contained HTML file with no build step, so it can be deployed as its own static
 site, separate from the Spring Boot backend, without duplicating the file anywhere.
 
-These steps prepare and document the deployment; they haven't been executed against a real Vercel
-account from this repo (see `docs/PLAN.md` Phase 4 notes).
+Live at **https://chat-bot-service-rust.vercel.app**, talking cross-origin to the backend above with
+CORS and API-key auth both configured.
 
 ## 1. Point Vercel at the widget directory
 
@@ -32,7 +32,7 @@ instance.
 ## 3. Allow the widget's origin on the backend
 
 The backend only accepts cross-origin `/chat/**` requests from origins listed in
-`chatbot.cors.allowed-origins` (`com.mel.cb.config.CorsConfig`, Phase 4). Set
+`chatbot.cors.allowed-origins` (`com.mel.cb.config.CorsConfig`). Set
 `CHATBOT_CORS_ALLOWED_ORIGINS` on the backend host to include the deployed widget's origin,
 comma-separated with any others you still need (e.g. local dev servers):
 

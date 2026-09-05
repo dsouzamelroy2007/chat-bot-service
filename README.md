@@ -163,11 +163,11 @@ Same request body as `/chat/reply`, but streams the reply via Server-Sent Events
 - Each following (default-named) event: one text chunk to append to the reply so far.
 - On failure, a final event named `error` with a user-facing message, then the stream closes normally.
 
-Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (see `docs/PLAN.md` Phase 4 notes for why). There's also no circuit-breaker timeout on this endpoint the way `/chat/reply` has (see above), since a streamed reply can legitimately take longer to finish; it does have its own, longer-lived 60s connection timeout at the transport level.
+Provider selection happens once, before the first token — a provider that fails after streaming has started is not retried, unlike `/chat/reply`'s per-request failover (replaying or duplicating partial output to paper over a failed mid-stream provider would be worse than just ending the stream). There's also no circuit-breaker timeout on this endpoint the way `/chat/reply` has (see above), since a streamed reply can legitimately take longer to finish; it does have its own, longer-lived 60s connection timeout at the transport level.
 
 ## Security
 
-`/chat/**` is hardened for public exposure with a few lightweight, independently-configurable layers (see `chatbot.security` in [application.yml](src/main/resources/application.yml) and `docs/PLAN.md` Phase 5 notes). All are safe defaults out of the box — a from-scratch self-host still boots and works with nothing configured here:
+`/chat/**` is hardened for public exposure with a few lightweight, independently-configurable layers (see `chatbot.security` in [application.yml](src/main/resources/application.yml)). All are safe defaults out of the box — a from-scratch self-host still boots and works with nothing configured here:
 
 - **Request size limit** — a request over 8 KB is rejected with `413` before its body is parsed; the 4000-character `message` cap above is a second, independent check on the parsed value.
 - **Rate limiting** — 20 requests/minute per client IP (`X-Forwarded-For` if present, else the socket address); a client over that limit gets `429` with `Retry-After: 60`. This is separate from each LLM provider's own daily quota tracking done further downstream — it protects this service's own front door, not the providers behind it.
@@ -214,5 +214,4 @@ widget can be deployed separately too (e.g. to Vercel) — see
 [docs/DEPLOY_WIDGET.md](docs/DEPLOY_WIDGET.md). Both are live from this repo, not just documented:
 the backend at https://chat-bot-service-06gv.onrender.com (`/bot` context path) and the widget at
 https://chat-bot-service-rust.vercel.app, talking to each other cross-origin with CORS and API-key
-auth both configured — see `docs/PLAN.md`'s "Widget deployed to Vercel" and "API key enforcement"
-sections for how that was verified end to end.
+auth both configured and verified end to end.
