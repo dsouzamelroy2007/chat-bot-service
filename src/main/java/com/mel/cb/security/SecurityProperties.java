@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * {@code chatbot.security.*} (Phase 5, docs/PLAN.md). {@code apiKey} follows the same
+ * {@code chatbot.security.*}. {@code apiKey} follows the same
  * optional/self-disabling convention as every provider/tool key in this project -- unset means the
  * check is skipped entirely (logged once at startup by {@link SecurityFilterConfig}), not a fatal
  * misconfiguration, since a from-scratch self-host should boot without any secrets configured.

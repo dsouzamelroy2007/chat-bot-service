@@ -34,3 +34,14 @@ target/
 .env
 .env.*
 !.env.example
+
+# IDE-specific project files -- not portable across machines/editors, no reason to be shared.
+.idea/
+.vscode/
+
+# Claude Code session state -- local to this machine, not part of the project.
+.claude/
+
+# Internal working dev-log kept locally for reference across sessions -- deliberately not part of
+# this repo's public history; docs/ARCHITECTURE.md is the polished, public equivalent.
+docs/PLAN.md

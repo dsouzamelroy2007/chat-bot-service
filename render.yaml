@@ -1,4 +1,4 @@
-# Render Blueprint (Phase 6, docs/PLAN.md) -- optional convenience for "New +" > "Blueprint" in the
+# Render Blueprint -- optional convenience for "New +" > "Blueprint" in the
 # Render dashboard, pointed at this repo. Not verified against a live Render account (no account
 # access from the environment this was written in) -- if it fails to parse or apply, fall back to
 # the manual "New +" > "Web Service" steps in docs/DEPLOY_BACKEND.md, which are the source of truth.

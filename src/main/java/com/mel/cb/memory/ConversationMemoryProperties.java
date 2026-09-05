@@ -5,9 +5,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * {@code chatbot.memory.*} -- see docs/PLAN.md Phase 2 notes for the reasoning behind these
- * defaults (a sliding per-conversation session, and a per-user token budget split evenly across
- * that user's currently-active conversations).
+ * {@code chatbot.memory.*} defaults: a sliding per-conversation session, and a per-user token
+ * budget split evenly across that user's currently-active conversations.
  */
 @Data
 @ConfigurationProperties(prefix = "chatbot.memory")

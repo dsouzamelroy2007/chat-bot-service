@@ -12,8 +12,8 @@ public interface UserFactRepository extends JpaRepository<UserFact, Long> {
   List<UserFact> findByUserId(String userId);
 
   /**
-   * Sets a fact's embedding after the fact itself has already been saved (RAG follow-up, docs/
-   * PLAN.md) -- a native query since Hibernate has no built-in mapping for pgvector's {@code vector}
+   * Sets a fact's embedding after the fact itself has already been saved -- a native query since
+   * Hibernate has no built-in mapping for pgvector's {@code vector}
    * type, and adding one (a custom {@code UserType}, or Spring AI's own {@code VectorStore}
    * abstraction) is more than this needs for two narrowly-scoped queries. {@code @Transactional} is
    * required here unlike plain {@code save()} -- {@code SimpleJpaRepository}'s own class-level

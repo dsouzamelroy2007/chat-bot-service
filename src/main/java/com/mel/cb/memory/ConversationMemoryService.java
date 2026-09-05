@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
  * Orchestrates conversation memory for {@code ChatReplyService}: loads context to build the next
  * prompt, records each turn, evicts (summarizes + frees space) once a conversation crosses its
  * share of its user's token budget, and retrieves the most relevant durable facts for the current
- * message (RAG follow-up, docs/PLAN.md). {@link ConversationMemoryStore}, {@link UserFactRepository},
+ * message. {@link ConversationMemoryStore}, {@link UserFactRepository},
  * and {@link ConversationSummarizer} are taken via {@code ObjectProvider} and this no-ops when
  * they're absent -- the same pattern {@code com.mel.cb.provider.QuotaTracker} uses -- so the
  * {@code local} profile (no Redis/Postgres) keeps working with plain stateless single-turn replies,
@@ -49,7 +49,7 @@ public class ConversationMemoryService {
   }
 
   /**
-   * Semantic retrieval for the current message (RAG follow-up, docs/PLAN.md) -- embeds
+   * Semantic retrieval for the current message -- embeds
    * {@code userMessage}, then finds the top-K most similar stored facts for {@code userId} by
    * cosine distance. Empty (never {@code null}) when the repository is absent (the {@code local}
    * profile), embedding is disabled/unconfigured, or the embedding call itself fails -- this is an
@@ -131,7 +131,7 @@ public class ConversationMemoryService {
   /**
    * Best-effort: a failed/skipped embedding leaves the fact saved as plain text, just absent from
    * future semantic retrieval until re-embedded -- there's no backfill job for this, a deliberate
-   * scope boundary (RAG follow-up, docs/PLAN.md). Never allowed to affect the outer save/dedup path
+   * scope boundary. Never allowed to affect the outer save/dedup path
    * above, which is why this runs after {@code save()} has already succeeded, not as part of it.
    */
   private void embedAndStore(UserFact saved) {

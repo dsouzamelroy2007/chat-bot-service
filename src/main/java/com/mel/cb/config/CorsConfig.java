@@ -23,7 +23,7 @@ public class CorsConfig implements WebMvcConfigurer {
     registry.addMapping("/chat/**")
         .allowedOrigins(allowedOrigins.toArray(new String[0]))
         .allowedMethods("GET", "POST")
-        // X-API-Key (Phase 5, docs/PLAN.md) -- needed for a cross-origin widget to pass
+        // X-API-Key -- needed for a cross-origin widget to pass
         // chatbot.security.api-key through preflight when it's configured.
         .allowedHeaders("Content-Type", "X-API-Key");
   }

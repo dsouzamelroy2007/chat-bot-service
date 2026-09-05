@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Wires the Phase 5 hardening filters (docs/PLAN.md) as {@link FilterRegistrationBean}s, scoped and
+ * Wires the hardening filters as {@link FilterRegistrationBean}s, scoped and
  * ordered explicitly rather than left to component-scan order:
  * <ol>
  *   <li>{@link SecurityHeadersFilter} on {@code /*} -- runs first so its headers land on every
@@ -89,7 +89,7 @@ public class SecurityFilterConfig {
 
   /**
    * Same {@link ApiKeyAuthFilter}, a second registration scoped to {@code /actuator/metrics/*}
-   * (observability follow-up, docs/PLAN.md) -- unlike {@code /actuator/health}, which Render's own
+   * -- unlike {@code /actuator/health}, which Render's own
    * platform health check hits unauthenticated and must stay open, {@code /actuator/metrics}
    * exposes per-endpoint request counts/latency and has no reason to be reachable by anyone
    * without the same shared secret {@code /chat/**} already requires when configured.

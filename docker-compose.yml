@@ -30,7 +30,7 @@ services:
       - REDIS_PORT=6379
 
   postgres:
-    # pgvector/pgvector:pg16 (RAG follow-up, docs/PLAN.md) -- same Postgres 16 base as plain
+    # pgvector/pgvector:pg16 -- same Postgres 16 base as plain
     # postgres:16-alpine, drop-in compatible (same env vars, same volume path), but with the
     # pgvector extension preinstalled -- required by V2__add_embedding_to_user_facts.sql.
     image: pgvector/pgvector:pg16

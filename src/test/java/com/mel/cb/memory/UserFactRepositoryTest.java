@@ -47,7 +47,7 @@ import org.testcontainers.utility.DockerImageName;
 @Transactional
 class UserFactRepositoryTest {
 
-  // pgvector/pgvector:pg16 (RAG follow-up, docs/PLAN.md) -- same Postgres 16 base as plain
+  // pgvector/pgvector:pg16 -- same Postgres 16 base as plain
   // postgres:16-alpine but with the pgvector extension preinstalled, required by
   // V2__add_embedding_to_user_facts.sql's CREATE EXTENSION vector.
   static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("pgvector/pgvector:pg16")

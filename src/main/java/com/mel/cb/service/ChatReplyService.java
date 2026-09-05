@@ -74,14 +74,14 @@ public class ChatReplyService {
    * response header, since {@link SseEmitter} doesn't expose response headers to a controller
    * returning it directly, and a value inside the stream itself survives any intermediary the same
    * way the rest of the stream does. A {@code provider} event follows once the winning provider's
-   * first chunk arrives (portfolio-polish item 2, docs/PLAN.md) -- {@code providerId|latencyMs},
+   * first chunk arrives -- {@code providerId|latencyMs},
    * pipe-delimited rather than JSON since it's two plain values and the widget already hand-parses
    * SSE frames. It can never arrive before {@code conversation} (that's sent before the router is
    * even invoked) and, per {@link ProviderRouter#streamReply}'s pre-first-chunk failover, names
    * whichever provider actually produced output, not necessarily the first one tried. Each
    * subsequent default-named event is one text delta to append.
    * <p>
-   * <b>Real per-token streaming was re-confirmed live (docs/PLAN.md, post-Phase-6 follow-up) to
+   * <b>Real per-token streaming was re-confirmed live to
    * still work correctly through the Phase 6 {@code ChatClient}/{@code ToolCallingAdvisor} wiring</b>
    * -- decompiling {@code ChatClientMessageAggregator}/{@code MessageAggregator} showed they observe
    * each streamed chunk via {@code doOnNext}/{@code doOnComplete} side effects rather than buffering
@@ -108,8 +108,8 @@ public class ChatReplyService {
    * {@code /chat/reply}, since wrapping a long-lived stream in the same {@code TimeLimiter} used for
    * the synchronous endpoint would be wrong for what can legitimately be a longer-running response.
    * <p>
-   * {@code emitterFinished} guards against a real race found live (docs/PLAN.md, post-Phase-6
-   * follow-up): when this endpoint's own {@link SseEmitter} timeout fires, Spring's default handling
+   * {@code emitterFinished} guards against a real race found live: when this endpoint's own
+   * {@link SseEmitter} timeout fires, Spring's default handling
    * completes the emitter internally with no callback of ours involved -- meanwhile this method's
    * worker thread is typically still blocked in {@code blockLast()} until the now-cancelled
    * underlying provider call actually throws, and only then reaches the {@code catch} block below.

@@ -13,17 +13,17 @@ import org.springframework.ai.chat.prompt.Prompt;
  * summary of older conversation turns evicted by {@code com.mel.cb.memory.ConversationMemoryService},
  * the still-verbatim recent history, and the new user message. Public (not package-private) because
  * {@code ChatReplyService} -- outside this package -- is the one assembling prompts now; providers
- * just execute whatever {@link Prompt} they're handed (see docs/PLAN.md Phase 2 notes).
+ * just execute whatever {@link Prompt} they're handed.
  * <p>
  * Deliberately carries no {@code ChatOptions} of its own (Phase 3 tried attaching tool callbacks
- * here via the {@code Prompt}'s runtime options; reverted -- see docs/PLAN.md). Each provider's own
+ * here via the {@code Prompt}'s runtime options; reverted). Each provider's own
  * {@code OpenAiChatModel} already has its complete default options (model, baseUrl, apiKey, and now
  * tool callbacks) baked in at construction; leaving {@code Prompt.getOptions()} {@code null} is what
  * makes the model fall back to those defaults, per its own {@code buildRequestPrompt} logic. A
  * non-null runtime options object here would replace that provider's whole configuration instead of
  * merging with it.
  * <p>
- * {@code facts} (RAG follow-up, docs/PLAN.md) are the top-K most semantically-relevant durable
+ * {@code facts} are the top-K most semantically-relevant durable
  * {@code UserFact}s for this user and message, from {@code
  * com.mel.cb.memory.ConversationMemoryService#findRelevantFacts} -- injected the same way as
  * {@code summary}, a separate {@code SystemMessage} rather than folded into the system prompt

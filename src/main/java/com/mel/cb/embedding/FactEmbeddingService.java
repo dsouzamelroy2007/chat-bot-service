@@ -9,7 +9,7 @@ import org.springframework.web.client.RestClient;
 
 /**
  * Calls Gemini's OpenAI-compatible {@code /embeddings} endpoint directly via {@link RestClient}
- * rather than through Spring AI's {@code OpenAiEmbeddingModel} (RAG follow-up, docs/PLAN.md) --
+ * rather than through Spring AI's {@code OpenAiEmbeddingModel} --
  * real bug found live, not assumed from the "OpenAI-compatible" label: a real request/response
  * round trip showed Gemini's actual response omits both {@code index} and {@code usage} entirely
  * from each item in the {@code data} array (confirmed via a raw call, not the SDK), unlike real
@@ -22,8 +22,7 @@ import org.springframework.web.client.RestClient;
  * {@code WebSearchTools} already call their free-tier APIs directly via {@link RestClient} with a
  * hand-written response record, rather than trusting a heavier client's assumptions) -- and this
  * project's own repeated lesson that a compatibility claim needs a real round trip to trust, not
- * just documentation (see docs/PLAN.md's Phase 0 autoconfig collision, Phase 2's missing Flyway
- * module, and the Phase 3 follow-up's tool-calling cast for the same lesson before).
+ * just documentation (a lesson this project has hit more than once before).
  */
 @Slf4j
 public class FactEmbeddingService {

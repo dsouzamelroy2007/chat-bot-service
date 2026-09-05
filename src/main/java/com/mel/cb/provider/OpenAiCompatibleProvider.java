@@ -20,7 +20,7 @@ import reactor.core.publisher.Flux;
  * the {@code chatbot.providers} config entry rather than via Spring AI's OpenAI autoconfiguration
  * -- that autoconfiguration only supports a single, statically-configured client and eagerly
  * builds unrelated embedding/image/moderation/audio clients that fail without a global
- * {@code OPENAI_API_KEY} (see docs/PLAN.md, Phase 0 notes).
+ * {@code OPENAI_API_KEY}.
  * <p>
  * Tool callbacks (Phase 3, {@code com.mel.cb.tools.ChatToolsRegistry}) are baked into this
  * model's own default {@link OpenAiChatOptions} here at construction, not attached per-request via
@@ -29,12 +29,11 @@ import reactor.core.publisher.Flux;
  * {@code prompt.getOptions() == null}; any non-null runtime options object is used as-is with no
  * merging; and {@code internalCall} then hard-casts it to {@code OpenAiChatOptions}. A per-request
  * options object built by a caller with no idea of this provider's own model/baseUrl/apiKey would
- * silently discard them all rather than merge, breaking the request -- see docs/PLAN.md for the
- * real (live-tested, not {@code javap}-assumed) failure this replaced.
+ * silently discard them all rather than merge, breaking the request.
  * <p>
  * Calls go through a {@link ChatClient} wrapping the {@link OpenAiChatModel}, not the model
- * directly -- a second real (live-tested) surprise, found during Phase 6 deployment testing
- * (docs/PLAN.md): {@code OpenAiChatModel.call(Prompt)}/{@code stream(Prompt)} build the request and
+ * directly -- a second real (live-tested) surprise, found during deployment testing:
+ * {@code OpenAiChatModel.call(Prompt)}/{@code stream(Prompt)} build the request and
  * hand back whatever the API returns, including a bare {@code tool_calls} response with no text,
  * with no loop of their own -- confirmed by decompiling the resolved 2.0.0 jar and finding no
  * {@code executeToolCalls} call anywhere in the class. The automatic "call the tool, feed the
@@ -76,15 +75,15 @@ public class OpenAiCompatibleProvider implements ChatProvider {
             // would keep hammering an already-rate-limited provider instead of moving on.
             .maxRetries(0)
             // Overrides AbstractOpenAiOptions.DEFAULT_TIMEOUT (60s) -- a real, independent call
-            // timeout on the underlying OpenAI-compatible HTTP client itself, found live (docs/
-            // PLAN.md, streaming-regression follow-up) by decompiling AbstractOpenAiOptions after a
+            // timeout on the underlying OpenAI-compatible HTTP client itself, found live
+            // (streaming-regression follow-up) by decompiling AbstractOpenAiOptions after a
             // long Gemini tool-calling stream kept getting cut off at ~60s regardless of this
             // service's own SseEmitter/resilience4j timeouts. It's unrelated to and sits underneath
             // both of those -- raising them alone (as Phase 6 already did for resilience4j's
             // chatReply TimeLimiter, still 60s) can't help while this default silently caps every
             // provider call at 60s first, before either of those ever gets a chance to fire.
             // Deliberately kept below ChatReplyController.STREAM_TIMEOUT_MS (90s), not equal to it --
-            // an equal-value first attempt at this fix (docs/PLAN.md) produced an exact tie live,
+            // an equal-value first attempt at this fix produced an exact tie live,
             // which let the SseEmitter's own container-level timeout handling win the race instead of
             // this app's own catch block on roughly half of runs, silently ending the stream with no
             // `error` event rather than the intended clean one. 80s gives this timeout -- and this

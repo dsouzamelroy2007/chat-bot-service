@@ -25,10 +25,10 @@ import reactor.core.publisher.Flux;
  * treated the same way -- there's no reason to give up on the whole request just because a
  * failure doesn't match one specific status code) -- {@link #getReply} additionally fails over on
  * a response that threw nothing but came back with no usable text at all (see its own doc for the
- * concrete provider quirk this was added for, Phase 6, docs/PLAN.md). Throws {@link ProvidersExhaustedException}
+ * concrete provider quirk this was added for). Throws {@link ProvidersExhaustedException}
  * once every provider has been tried or skipped; callers let that -- like any other exception --
  * escape to the outer, request-level circuit breaker in ChatReplyController, which is what
- * actually produces the canned fallback reply (see docs/PLAN.md conflict #1).
+ * actually produces the canned fallback reply.
  * <p>
  * Per-provider {@link CircuitBreaker} and {@link RateLimiter} instances are built here,
  * programmatically, keyed by provider id, rather than via Resilience4j annotations -- the
@@ -84,7 +84,7 @@ public class ProviderRouter {
           // returned unusable output -- e.g. Gemini's OpenAI-compatible endpoint 400ing on the
           // tool-result follow-up call for lacking a Gemini-specific `thought_signature` that
           // Spring AI's generic tool-calling loop doesn't know to echo back, discovered live
-          // during Phase 6 deployment testing (docs/PLAN.md). Treated the same as a thrown
+          // during deployment testing. Treated the same as a thrown
           // exception for failover purposes: a 200 with nothing useful in it is not meaningfully
           // different from a failure from the caller's perspective, and gating failover on
           // exceptions alone left this kind of silent, provider-specific quirk with no way to
@@ -123,7 +123,7 @@ public class ProviderRouter {
   /**
    * Streaming counterpart to {@link #getReply}, for the SSE endpoint (Phase 4). Applies the same
    * skip logic (disabled/over-quota/circuit-open/rate-limited) as {@link #getReply}, and -- as of
-   * the post-Phase-6 live-deployment follow-up (docs/PLAN.md) -- also fails over to the next
+   * the post-Phase-6 live-deployment follow-up -- also fails over to the next
    * provider if the chosen one errors <b>before emitting any chunk at all</b> (its own connect/read
    * timeout, an immediate 4xx/5xx, etc.). This was added after a live Render deployment showed a
    * plain, tool-free streaming request could still time out entirely against a single flaky
@@ -145,7 +145,7 @@ public class ProviderRouter {
    * tiers (e.g. OpenRouter) to still see streaming traffic, without pretending to know an exact token
    * count.
    * <p>
-   * Does <b>not</b> get {@link #getReply}'s empty-but-200 failover (Phase 6, docs/PLAN.md) -- doing so
+   * Does <b>not</b> get {@link #getReply}'s empty-but-200 failover -- doing so
    * would mean buffering an unknown number of chunks before deciding the whole stream was empty and
    * only then trying the next provider, which conflicts with actually streaming as chunks arrive. A
    * provider with the same quirk that caused that fix would show up here as a stream that opens (so

@@ -21,7 +21,7 @@ public class ChatMessage implements Serializable {
   String userId;
 
   /**
-   * Capped at 4000 chars (Phase 5, docs/PLAN.md) -- generous for one chat turn, but bounded so a
+   * Capped at 4000 chars -- generous for one chat turn, but bounded so a
    * single message can't eat most of a user's per-conversation token budget
    * ({@code chatbot.memory.user-token-budget}) or blow past a provider's context window by itself.
    */

@@ -1,4 +1,4 @@
-# Multi-stage (Phase 6, docs/PLAN.md) -- a host that builds straight from this Dockerfile against
+# Multi-stage -- a host that builds straight from this Dockerfile against
 # the git repo (e.g. Render) has no separate "run mvn package first" step the way local
 # docker-compose usage does via start.sh; a single-stage Dockerfile assuming a pre-built
 # target/*.jar fails there with "lstat /target: no such file or directory", confirmed live against
