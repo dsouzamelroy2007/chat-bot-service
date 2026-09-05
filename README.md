@@ -1,6 +1,33 @@
 # chat-bot-service
 
-A self-hostable Spring Boot microservice that gives AI-generated chat replies, routed across several free-tier LLM providers (Gemini, Groq, Mistral, OpenRouter) via Spring AI so it can run at zero API cost. It remembers a conversation (Redis + Postgres), can call a handful of tools mid-reply (weather, time, directions, web search), streams replies token-by-token over SSE, and is hardened for public exposure (rate limiting, request limits, optional API-key auth). Ships with a minimal static chat widget for trying it out in a browser, and exposes its REST API via Swagger/OpenAPI for a real front-end app to integrate against.
+A production-shaped Spring Boot AI chat service, built to demonstrate the engineering that sits
+*around* an LLM call rather than a thin wrapper around one: automatic failover across four free-tier
+LLM providers with per-provider circuit breakers and quota tracking, retrieval-augmented generation
+via pgvector for durable per-user memory, streaming replies, function-calling tools, and public-facing
+hardening — all runnable at zero API cost. **Live at
+[chat-bot-service-06gv.onrender.com/bot](https://chat-bot-service-06gv.onrender.com/bot).**
+
+**→ [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the real read here** — the design decisions,
+tradeoffs, and a few real bugs that only surfaced under live traffic, not just a restatement of the
+code.
+
+**Highlights:**
+- **Multi-provider failover** (Gemini → Groq → Mistral → OpenRouter) with a per-provider circuit
+  breaker, rate limiter, and daily-quota tracker — and the failing-over-then-succeeding provider is
+  surfaced live in the widget (`via groq · 178ms`), not hidden behind the chat box.
+- **RAG over pgvector**: facts learned in one conversation are embedded and semantically retrieved in
+  a completely different, brand-new conversation — [proven on camera](docs/screenshots/rag-memory-reuse.gif),
+  not just asserted.
+- **Two-tier memory** (Redis for the current session, Postgres for durable, cross-session facts),
+  streaming SSE replies, and function-calling tools (weather, time, directions, web search).
+- 110+ tests, most against real WireMock/Testcontainers infrastructure rather than hand-written mocks,
+  because [the real bugs here](docs/ARCHITECTURE.md#real-bugs-found-live) all lived in the gap between
+  "compiles" and "actually works against a live API."
+
+**Engineering process:** built with heavy use of Claude Code as a pair-programming accelerator for
+scaffolding and iteration speed — every architectural decision, tradeoff, and bug fix was verified by
+me against real infrastructure and real provider APIs, not taken on faith. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#a-note-on-how-this-was-built) for the full note.
 
 **Contents:** [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Running the application](#running-the-application) · [Chat widget](#chat-widget) · [Testing](#testing) · [API](#api) · [Security](#security) · [Conversation memory](#conversation-memory) · [Tools](#tools) · [Deployment](#deployment)
 
