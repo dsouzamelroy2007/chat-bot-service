@@ -8,6 +8,7 @@ import com.mel.cb.memory.ConversationTurn;
 import com.mel.cb.model.ChatMessage;
 import com.mel.cb.model.ChatReply;
 import com.mel.cb.provider.ChatPrompts;
+import com.mel.cb.provider.ProviderChatResponse;
 import com.mel.cb.provider.ProviderRouter;
 import com.mel.cb.util.ChatDataUtil;
 import java.io.IOException;
@@ -46,9 +47,11 @@ public class ChatReplyService {
     try {
       Prompt prompt = buildPrompt(chatMessage, memoryService.loadContext(conversationId));
 
-      ChatResponse response = providerRouter.getReply(prompt);
-      ChatReply reply = ChatDataUtil.getChatReplyFromText(extractText(response));
+      ProviderChatResponse result = providerRouter.getReply(prompt);
+      ChatReply reply = ChatDataUtil.getChatReplyFromText(extractText(result.response()));
       reply.setConversationId(conversationId);
+      reply.setProvider(result.providerId());
+      reply.setLatencyMs(result.latencyMs());
 
       memoryService.recordTurn(conversationId, chatMessage.getUserId(), chatMessage.getMessage(), reply.getReply());
       return reply;
@@ -70,8 +73,13 @@ public class ChatReplyService {
    * The conversation id is sent as the first SSE event (named {@code conversation}) rather than a
    * response header, since {@link SseEmitter} doesn't expose response headers to a controller
    * returning it directly, and a value inside the stream itself survives any intermediary the same
-   * way the rest of the stream does. Each subsequent default-named event is one text delta to
-   * append.
+   * way the rest of the stream does. A {@code provider} event follows once the winning provider's
+   * first chunk arrives (portfolio-polish item 2, docs/PLAN.md) -- {@code providerId|latencyMs},
+   * pipe-delimited rather than JSON since it's two plain values and the widget already hand-parses
+   * SSE frames. It can never arrive before {@code conversation} (that's sent before the router is
+   * even invoked) and, per {@link ProviderRouter#streamReply}'s pre-first-chunk failover, names
+   * whichever provider actually produced output, not necessarily the first one tried. Each
+   * subsequent default-named event is one text delta to append.
    * <p>
    * <b>Real per-token streaming was re-confirmed live (docs/PLAN.md, post-Phase-6 follow-up) to
    * still work correctly through the Phase 6 {@code ChatClient}/{@code ToolCallingAdvisor} wiring</b>
@@ -118,6 +126,7 @@ public class ChatReplyService {
     String conversationId = resolveConversationId(chatMessage.getConversationId());
     StringBuilder fullText = new StringBuilder();
     AtomicBoolean emitterFinished = new AtomicBoolean(false);
+    AtomicBoolean providerAnnounced = new AtomicBoolean(false);
     emitter.onTimeout(() -> {
       log.warn("Streaming timed out for message {}", chatMessage);
       completeWithError(emitter, emitterFinished);
@@ -127,8 +136,15 @@ public class ChatReplyService {
       emitter.send(SseEmitter.event().name("conversation").data(conversationId));
 
       providerRouter.streamReply(prompt)
-          .doOnNext(response -> {
-            String delta = extractText(response);
+          .doOnNext(chunk -> {
+            if (providerAnnounced.compareAndSet(false, true)) {
+              try {
+                emitter.send(SseEmitter.event().name("provider").data(chunk.providerId() + "|" + chunk.latencyMs()));
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            }
+            String delta = extractText(chunk.response());
             if (delta != null && !delta.isEmpty()) {
               fullText.append(delta);
               try {

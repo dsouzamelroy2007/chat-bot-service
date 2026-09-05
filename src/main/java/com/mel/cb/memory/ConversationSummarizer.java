@@ -50,7 +50,7 @@ public class ConversationSummarizer {
 
     Prompt prompt = ChatPrompts.of(SYSTEM_PROMPT, null, List.of(), List.of(), instruction);
     try {
-      ChatResponse response = providerRouter.getReply(prompt);
+      ChatResponse response = providerRouter.getReply(prompt).response();
       String text = response.getResult() != null ? response.getResult().getOutput().getText() : null;
       return parse(text, existingSummary);
     } catch (Exception e) {

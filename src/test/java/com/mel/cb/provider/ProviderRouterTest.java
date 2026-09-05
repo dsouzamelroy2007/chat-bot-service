@@ -1,5 +1,6 @@
 package com.mel.cb.provider;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,9 +63,10 @@ class ProviderRouterTest {
     ChatResponse expected = chatResponse("from secondary");
     when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply(prompt);
+    ProviderChatResponse actual = router.getReply(prompt);
 
-    assertSame(expected, actual);
+    assertSame(expected, actual.response());
+    assertEquals("secondary", actual.providerId());
     verify(primary).reply(prompt);
     verify(secondary).reply(prompt);
   }
@@ -76,9 +78,9 @@ class ProviderRouterTest {
     ChatResponse expected = chatResponse("from secondary");
     when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply(prompt);
+    ProviderChatResponse actual = router.getReply(prompt);
 
-    assertSame(expected, actual);
+    assertSame(expected, actual.response());
     verify(primary, never()).reply(any(Prompt.class));
   }
 
@@ -92,9 +94,9 @@ class ProviderRouterTest {
     ChatResponse expected = chatResponse("from secondary");
     when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply(prompt);
+    ProviderChatResponse actual = router.getReply(prompt);
 
-    assertSame(expected, actual);
+    assertSame(expected, actual.response());
     verify(primary, never()).reply(any(Prompt.class));
   }
 
@@ -106,9 +108,9 @@ class ProviderRouterTest {
     ChatResponse expected = chatResponse("from secondary");
     when(secondary.reply(any(Prompt.class))).thenReturn(expected);
 
-    ChatResponse actual = router.getReply(prompt);
+    ProviderChatResponse actual = router.getReply(prompt);
 
-    assertSame(expected, actual);
+    assertSame(expected, actual.response());
     verify(primary).reply(prompt);
     verify(secondary).reply(prompt);
   }
@@ -167,9 +169,11 @@ class ProviderRouterTest {
     ChatResponse chunk = chatResponse("hello");
     when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
 
-    Flux<ChatResponse> result = router.streamReply(prompt);
+    Flux<ProviderChatResponse> result = router.streamReply(prompt);
 
-    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    StepVerifier.create(result)
+        .expectNextMatches(pcr -> pcr.response() == chunk && pcr.providerId().equals("primary"))
+        .verifyComplete();
     verify(secondary, never()).streamReply(any(Prompt.class));
   }
 
@@ -180,9 +184,11 @@ class ProviderRouterTest {
     ChatResponse chunk = chatResponse("hello from secondary");
     when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
 
-    Flux<ChatResponse> result = router.streamReply(prompt);
+    Flux<ProviderChatResponse> result = router.streamReply(prompt);
 
-    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    StepVerifier.create(result)
+        .expectNextMatches(pcr -> pcr.response() == chunk)
+        .verifyComplete();
     verify(primary, never()).streamReply(any(Prompt.class));
   }
 
@@ -192,7 +198,7 @@ class ProviderRouterTest {
     RuntimeException failure = new RuntimeException("connection reset mid-stream");
     when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.concat(Flux.just(chatResponse("partial")), Flux.error(failure)));
 
-    Flux<ChatResponse> result = router.streamReply(prompt);
+    Flux<ProviderChatResponse> result = router.streamReply(prompt);
 
     StepVerifier.create(result).expectNextCount(1).verifyErrorMatches(e -> e == failure);
     verify(secondary, never()).streamReply(any(Prompt.class));
@@ -207,9 +213,11 @@ class ProviderRouterTest {
     ChatResponse chunk = chatResponse("from secondary");
     when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.just(chunk));
 
-    Flux<ChatResponse> result = router.streamReply(prompt);
+    Flux<ProviderChatResponse> result = router.streamReply(prompt);
 
-    StepVerifier.create(result).expectNext(chunk).verifyComplete();
+    StepVerifier.create(result)
+        .expectNextMatches(pcr -> pcr.response() == chunk && pcr.providerId().equals("secondary"))
+        .verifyComplete();
     verify(primary).streamReply(prompt);
     verify(secondary).streamReply(prompt);
   }
@@ -221,7 +229,7 @@ class ProviderRouterTest {
     when(primary.streamReply(any(Prompt.class))).thenReturn(Flux.error(new RuntimeException("boom1")));
     when(secondary.streamReply(any(Prompt.class))).thenReturn(Flux.error(new RuntimeException("boom2")));
 
-    Flux<ChatResponse> result = router.streamReply(prompt);
+    Flux<ProviderChatResponse> result = router.streamReply(prompt);
 
     StepVerifier.create(result).verifyError(ProvidersExhaustedException.class);
   }

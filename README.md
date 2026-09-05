@@ -47,7 +47,11 @@ Once running, the service listens on `http://localhost:8080/bot`.
 
 A minimal static chat widget ([src/main/resources/static/index.html](src/main/resources/static/index.html)) is served by the same application at `http://localhost:8080/bot/`. It's a single self-contained HTML page — no build step, no separate frontend project — that streams replies via `POST /chat/reply/stream` and renders them token-by-token as they arrive.
 
-![Chat widget showing a user message and the bot's reply](docs/screenshots/chat-widget.png)
+![Chat widget showing a user message and the bot's reply, with the reply's meta line reading "via stub · 38ms · 01:24 PM"](docs/screenshots/chat-widget.png)
+
+The meta line under each reply names which `ChatProvider` actually answered and how long it took — the multi-provider failover/circuit-breaker/quota system described in the tech stack above is otherwise invisible behind a plain chat box, so this surfaces it live:
+
+![GIF of a message being sent and the reply arriving with provider-attribution metadata](docs/screenshots/chat-widget-provider-attribution.gif)
 
 It's meant as a quick way to try the bot in a browser, not as a production UI. Both `/chat/reply` and `/chat/reply/stream` remain fully documented via Swagger/OpenAPI (see below) so a real, separately-hosted front end can integrate against either directly.
 
@@ -120,12 +124,15 @@ Receives a bot identifier and the user's message, sends the message to whichever
 - `reply` — the chat reply text. Falls back to a default message if the AI call fails or the circuit breaker trips.
 - `timestamp` — ISO 8601 format with fractional seconds, human-readable and chronologically sortable.
 - `conversationId` — identifies the conversation for follow-up turns. Echoed back if the request included one, otherwise a new id is minted and returned here — pass it back on the next request to continue the same conversation (see [Conversation memory](#conversation-memory)).
+- `provider` — id of the `ChatProvider` that actually answered (e.g. `gemini`, `groq`), surfacing the multi-provider failover/circuit-breaker routing described in the tech stack above. `null` for the circuit breaker's canned fallback, since no provider ever replied.
+- `latencyMs` — how long that provider's call took, in milliseconds. `null` alongside `provider`.
 
 ### `POST /chat/reply/stream`
 
 Same request body as `/chat/reply`, but streams the reply via Server-Sent Events (`text/event-stream`) as it's generated instead of waiting for the full response. Not `EventSource`-compatible by design (`EventSource` can't `POST` a JSON body) — consume it with `fetch()` and read `response.body` as a stream, as the widget does.
 
 - First event, named `conversation`: the conversation id (always sent, even for a brand-new conversation — there's no response header for it, since a streaming controller method returning `SseEmitter` doesn't expose one).
+- Second event, named `provider`: `<providerId>|<latencyMs>`, sent once the winning provider's first chunk arrives — `latencyMs` here is time-to-first-token rather than a full round-trip, since the reply is still streaming out. Names whichever provider's output actually reached the client, which per the failover behavior below isn't necessarily the first one attempted.
 - Each following (default-named) event: one text chunk to append to the reply so far.
 - On failure, a final event named `error` with a user-facing message, then the stream closes normally.
 
@@ -143,7 +150,13 @@ Provider selection happens once, before the first token — a provider that fail
 
 ## Conversation memory
 
-Each conversation's recent turns and a rolling summary of older ones are kept in Redis for the length of a session (~8 hours of activity); the model sees them as real context on every reply, not just the latest message. Token usage is budgeted per user, split evenly across however many conversations that user currently has active — once a conversation nears its share, its oldest turns are summarised away to make room, and any durable facts spotted about the user (preferences, name, etc.) are saved to Postgres so they persist across sessions.
+Each conversation's recent turns and a rolling summary of older ones are kept in Redis for the length of a session (~8 hours of activity); the model sees them as real context on every reply, not just the latest message. Token usage is budgeted per user, split evenly across however many conversations that user currently has active — once a conversation nears its share, its oldest turns are summarised away to make room, and any durable facts spotted about the user (preferences, name, etc.) are extracted and saved to Postgres so they persist across sessions, long after the Redis-backed short-term memory above has expired.
+
+**Retrieval is semantic, not exact-text.** Each saved fact is embedded (Gemini's `gemini-embedding-001`, 768 dimensions) and stored in a `vector` column via [pgvector](https://github.com/pgvector/pgvector) on the same Postgres database — no separate vector database. On every reply, the current message is embedded and the top-K most similar facts for that user are retrieved by cosine distance (pgvector's `<=>` operator) and injected into the prompt, regardless of word overlap with how the fact was originally phrased.
+
+Proven end to end against a real Postgres+pgvector/Redis/Gemini stack, not mocked: a message revealing "I work as a backend engineer and my favorite hobby is rock climbing" gets extracted into two facts and embedded; a **brand-new conversation** with zero prior turns — asking only "Do you know anything about my job or my hobbies?" — correctly answers *"Yes! You're a backend engineer and you love rock climbing"*, sourced purely from the pgvector lookup (there is nothing else in that conversation's own history it could have come from). This also demonstrates the retrieval is provider-agnostic: the fact-saving turn was answered by Gemini, the recall turn by Groq — the facts are already in the prompt before `ProviderRouter` ever picks a provider.
+
+![GIF: a fact is revealed and saved, then a brand-new conversation correctly recalls it via pgvector semantic search](docs/screenshots/rag-memory-reuse.gif)
 
 ## Tools
 

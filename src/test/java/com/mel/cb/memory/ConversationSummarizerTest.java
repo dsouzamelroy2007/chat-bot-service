@@ -15,6 +15,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import com.mel.cb.provider.ProviderChatResponse;
 import com.mel.cb.provider.ProviderRouter;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,8 +77,9 @@ class ConversationSummarizerTest {
     assertTrue(result.facts().isEmpty());
   }
 
-  private static ChatResponse responseWithText(String text) {
-    return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+  private static ProviderChatResponse responseWithText(String text) {
+    ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+    return new ProviderChatResponse(response, "primary", 0L);
   }
 
 }

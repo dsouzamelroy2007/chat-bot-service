@@ -13,7 +13,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.ObjectProvider;
 
@@ -55,9 +54,10 @@ class ProviderRouterFailoverWireMockTest {
     OpenAiCompatibleProvider secondary = provider("secondary", secondaryServer.baseUrl(), 2, null);
     ProviderRouter router = routerFor(List.of(primary, secondary), null);
 
-    ChatResponse response = router.getReply(testPrompt());
+    ProviderChatResponse response = router.getReply(testPrompt());
 
-    assertEquals("Hello from secondary", response.getResult().getOutput().getText());
+    assertEquals("Hello from secondary", response.response().getResult().getOutput().getText());
+    assertEquals("secondary", response.providerId());
     primaryServer.verify(1, postRequestedFor(urlEqualTo(CHAT_COMPLETIONS_PATH)));
     secondaryServer.verify(1, postRequestedFor(urlEqualTo(CHAT_COMPLETIONS_PATH)));
   }
@@ -84,9 +84,9 @@ class ProviderRouterFailoverWireMockTest {
     };
     ProviderRouter router = routerFor(List.of(primary, secondary), alwaysOverQuotaForPrimary);
 
-    ChatResponse response = router.getReply(testPrompt());
+    ProviderChatResponse response = router.getReply(testPrompt());
 
-    assertEquals("Hello from secondary", response.getResult().getOutput().getText());
+    assertEquals("Hello from secondary", response.response().getResult().getOutput().getText());
     primaryServer.verify(0, postRequestedFor(urlEqualTo(CHAT_COMPLETIONS_PATH)));
     secondaryServer.verify(1, postRequestedFor(urlEqualTo(CHAT_COMPLETIONS_PATH)));
   }

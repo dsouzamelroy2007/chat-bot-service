@@ -52,7 +52,7 @@ public class ProviderRouter {
     }
   }
 
-  public ChatResponse getReply(Prompt prompt) {
+  public ProviderChatResponse getReply(Prompt prompt) {
     for (ChatProvider provider : registry.all()) {
       String id = provider.getProviderId();
       if (!provider.isEnabled()) {
@@ -96,7 +96,7 @@ public class ProviderRouter {
         }
         circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         log.info("Provider {} responded in {} ms", id, elapsedMs);
-        return response;
+        return new ProviderChatResponse(response, id, elapsedMs);
       } catch (Exception e) {
         circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
         log.warn("Provider {} failed, trying next provider: {}", id, e.getMessage());
@@ -152,11 +152,11 @@ public class ProviderRouter {
    * the pre-first-chunk failover above doesn't apply) and then emits nothing, rather than a clean
    * fallback.
    */
-  public Flux<ChatResponse> streamReply(Prompt prompt) {
+  public Flux<ProviderChatResponse> streamReply(Prompt prompt) {
     return streamReplyFrom(prompt, registry.all(), 0);
   }
 
-  private Flux<ChatResponse> streamReplyFrom(Prompt prompt, List<ChatProvider> providers, int index) {
+  private Flux<ProviderChatResponse> streamReplyFrom(Prompt prompt, List<ChatProvider> providers, int index) {
     if (index >= providers.size()) {
       throw new ProvidersExhaustedException("All chat providers exhausted or unavailable");
     }
@@ -185,7 +185,11 @@ public class ProviderRouter {
     long start = System.nanoTime();
     AtomicBoolean emittedAny = new AtomicBoolean(false);
     return provider.streamReply(prompt)
-        .doOnNext(response -> emittedAny.set(true))
+        // Elapsed-since-attempt-start on every chunk, not just the first -- cheap to compute, and
+        // it's the caller's job (ChatReplyService) to only care about the first chunk's value as a
+        // time-to-first-token figure for the widget.
+        .map(response -> new ProviderChatResponse(response, id, Duration.ofNanos(System.nanoTime() - start).toMillis()))
+        .doOnNext(chunk -> emittedAny.set(true))
         .doOnComplete(() -> {
           circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
           if (provider.getLimits() != null && quotaTracker != null) {

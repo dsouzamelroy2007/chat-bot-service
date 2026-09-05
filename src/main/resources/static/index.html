@@ -212,6 +212,15 @@
       return bubble;
     }
 
+    // Prepends "via <provider> · <latency>ms" to a bot bubble's meta line once the backend's
+    // `provider` SSE event names which ChatProvider actually answered (see ChatReplyService's
+    // streamReplyForUserMessage javadoc) -- surfaces the multi-provider failover/circuit-breaker
+    // system that's otherwise invisible behind the chat box (docs/PLAN.md portfolio-polish item 2).
+    function setProviderMeta(bubble, providerId, latencyMs) {
+      const meta = bubble.querySelector(".meta");
+      meta.textContent = `via ${providerId} · ${latencyMs}ms · ${formatTime(new Date())}`;
+    }
+
     function appendToBubble(bubble, textChunk) {
       bubble.querySelector(".content").textContent += textChunk;
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -258,6 +267,7 @@
 
       const typingEl = addTypingIndicator();
       let botBubble = null;
+      let pendingProvider = null;
 
       try {
         const headers = { "Content-Type": "application/json" };
@@ -293,6 +303,15 @@
             if (frame.event === "conversation") {
               conversationId = frame.data;
               localStorage.setItem("chatbot_conversation_id", conversationId);
+            } else if (frame.event === "provider") {
+              // Arrives before the first text delta (see ChatReplyService), so the bubble may not
+              // exist yet -- stash it and apply once addBubble("bot") creates one below.
+              const [providerId, latencyMs] = frame.data.split("|");
+              if (botBubble) {
+                setProviderMeta(botBubble, providerId, latencyMs);
+              } else {
+                pendingProvider = { providerId, latencyMs };
+              }
             } else if (frame.event === "error") {
               if (typingEl.isConnected) typingEl.remove();
               addBubble(frame.data, "error");
@@ -300,6 +319,10 @@
               if (!botBubble) {
                 typingEl.remove();
                 botBubble = addBubble("", "bot");
+                if (pendingProvider) {
+                  setProviderMeta(botBubble, pendingProvider.providerId, pendingProvider.latencyMs);
+                  pendingProvider = null;
+                }
               }
               appendToBubble(botBubble, frame.data);
             }

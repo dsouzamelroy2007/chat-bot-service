@@ -15,6 +15,7 @@ import com.mel.cb.memory.ConversationContext;
 import com.mel.cb.memory.ConversationMemoryService;
 import com.mel.cb.model.ChatMessage;
 import com.mel.cb.model.ChatReply;
+import com.mel.cb.provider.ProviderChatResponse;
 import com.mel.cb.provider.ProviderRouter;
 import com.mel.cb.provider.ProvidersExhaustedException;
 import java.util.List;
@@ -77,12 +78,14 @@ public class ChatReplyServiceTest {
   @Test
   public void testGetReplyForUserMessageSuccess() {
     ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(chatReply.getReply()))));
-    when(providerRouter.getReply(any(Prompt.class))).thenReturn(response);
+    when(providerRouter.getReply(any(Prompt.class))).thenReturn(new ProviderChatResponse(response, "primary", 123L));
 
     ChatReply actualReply = chatReplyService.getReplyForUserMessage(chatMessage);
 
     Assertions.assertEquals(chatReply.getReply(), actualReply.getReply());
     Assertions.assertNotNull(actualReply.getConversationId());
+    Assertions.assertEquals("primary", actualReply.getProvider());
+    Assertions.assertEquals(123L, actualReply.getLatencyMs());
     verify(memoryService).recordTurn(actualReply.getConversationId(), chatMessage.getUserId(),
         chatMessage.getMessage(), actualReply.getReply());
   }
@@ -92,7 +95,7 @@ public class ChatReplyServiceTest {
     when(memoryService.findRelevantFacts(chatMessage.getUserId(), chatMessage.getMessage()))
         .thenReturn(List.of("likes coffee", "based in Amsterdam"));
     ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(chatReply.getReply()))));
-    when(providerRouter.getReply(any(Prompt.class))).thenReturn(response);
+    when(providerRouter.getReply(any(Prompt.class))).thenReturn(new ProviderChatResponse(response, "primary", 123L));
 
     chatReplyService.getReplyForUserMessage(chatMessage);
 
@@ -108,7 +111,7 @@ public class ChatReplyServiceTest {
   @Test
   public void testGetReplyForUserMessageEmptyResponse() {
     ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(""))));
-    when(providerRouter.getReply(any(Prompt.class))).thenReturn(response);
+    when(providerRouter.getReply(any(Prompt.class))).thenReturn(new ProviderChatResponse(response, "primary", 123L));
 
     ChatReply actualReply = chatReplyService.getReplyForUserMessage(chatMessage);
     Assertions.assertEquals(com.mel.cb.constants.ChatConstants.NO_REPLY_AVAILABLE, actualReply.getReply());
@@ -118,7 +121,7 @@ public class ChatReplyServiceTest {
   public void testGetReplyForUserMessageReusesGivenConversationId() {
     chatMessage.setConversationId("conversation-42");
     ChatResponse response = new ChatResponse(List.of(new Generation(new AssistantMessage(chatReply.getReply()))));
-    when(providerRouter.getReply(any(Prompt.class))).thenReturn(response);
+    when(providerRouter.getReply(any(Prompt.class))).thenReturn(new ProviderChatResponse(response, "primary", 123L));
 
     ChatReply actualReply = chatReplyService.getReplyForUserMessage(chatMessage);
 
@@ -135,6 +138,25 @@ public class ChatReplyServiceTest {
     verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
     verify(emitter).complete();
     verify(memoryService).recordTurn(anyString(), eq(chatMessage.getUserId()), eq(chatMessage.getMessage()), eq("Hello world"));
+  }
+
+  @Test
+  public void testStreamReplyForUserMessageSendsProviderEventOnceForFirstChunkOnly() throws Exception {
+    when(providerRouter.streamReply(any(Prompt.class)))
+        .thenReturn(Flux.just(chunk("Hello", "primary", 123L), chunk(" world", "primary", 456L)));
+
+    chatReplyService.streamReplyForUserMessage(chatMessage, emitter);
+
+    ArgumentCaptor<SseEmitter.SseEventBuilder> eventCaptor = ArgumentCaptor.forClass(SseEmitter.SseEventBuilder.class);
+    verify(emitter, atLeastOnce()).send(eventCaptor.capture());
+    // The "provider" SSE frame's payload is the literal "primary|123" (ChatReplyService pipe-joins
+    // providerId and latencyMs) -- asserting it appears exactly once, not on the second chunk too,
+    // proves the compareAndSet gate in streamReplyForUserMessage actually only announces once.
+    long providerEventCount = eventCaptor.getAllValues().stream()
+        .flatMap(event -> event.build().stream())
+        .filter(part -> String.valueOf(part.getData()).contains("primary|123"))
+        .count();
+    Assertions.assertEquals(1, providerEventCount);
   }
 
   @Test
@@ -176,8 +198,12 @@ public class ChatReplyServiceTest {
     verify(memoryService, never()).recordTurn(any(), any(), any(), any());
   }
 
-  private static ChatResponse chunk(String text) {
-    return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+  private static ProviderChatResponse chunk(String text) {
+    return chunk(text, "primary", 0L);
+  }
+
+  private static ProviderChatResponse chunk(String text, String providerId, long latencyMs) {
+    return new ProviderChatResponse(new ChatResponse(List.of(new Generation(new AssistantMessage(text)))), providerId, latencyMs);
   }
 
 }

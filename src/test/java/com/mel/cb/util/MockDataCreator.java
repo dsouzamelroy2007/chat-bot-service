@@ -13,7 +13,7 @@ public class MockDataCreator {
     }
 
     public static ChatReply getChatReplyForTest(){
-        return new ChatReply("See you soon!!", timeStamp, null);
+        return new ChatReply("See you soon!!", timeStamp, null, null, null);
     }
 
 }
