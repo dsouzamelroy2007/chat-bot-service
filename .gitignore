@@ -45,3 +45,6 @@ target/
 # Internal working dev-log kept locally for reference across sessions -- deliberately not part of
 # this repo's public history; docs/ARCHITECTURE.md is the polished, public equivalent.
 docs/PLAN.md
+
+# Personal reference material (e.g. interview-prep notes) -- for local use only, never committed.
+docs/private/
